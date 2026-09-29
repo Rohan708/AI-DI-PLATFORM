@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-data-engineer"
+version = "0.1.0"
+description = "AI Data Engineer Platform"
+authors = [{name = "Author Name", email = "author@example.com"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.0",
+    "pydantic-settings>=2.0.0",
+    "pydantic>=2.0.0",
+    "snowflake-connector-python>=3.0.0",
+    "cryptography>=41.0.0",
+    "sqlglot>=20.0.0",
+    "alembic>=1.12.0"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "testcontainers[postgres]>=3.7.1",
+    "ruff>=0.1.0",
+    "mypy>=1.5.0",
+    "pre-commit>=3.4.0",
+]
+reasoning = [
+    "openai>=1.0.0",
+    # Placeholders for future LLM libs
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black/ruff format
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
