@@ -1,0 +1,21 @@
+# Local metadata store. Values come from .env (copy .env.example first).
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: aide-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aide}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-aide}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - aide_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aide} -d ${POSTGRES_DB:-aide}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  aide_pgdata:
