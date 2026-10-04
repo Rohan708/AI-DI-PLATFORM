@@ -84,19 +84,32 @@ def session(migrated_engine: Engine) -> Iterator[Session]:
             transaction.rollback()
 
 
-@pytest.fixture
-def empty_database_url(postgres_url: str) -> Iterator[str]:
-    """A brand-new, empty database in the same container (for migration tests)."""
-    name = f"mig_{uuid.uuid4().hex[:12]}"
+@pytest.fixture(scope="session")
+def make_database(postgres_url: str) -> Iterator[Callable[[], str]]:
+    """Factory for brand-new, empty databases in the same container (migration tests,
+    lab databases). All are dropped at the end of the session."""
     admin = create_engine(postgres_url, isolation_level="AUTOCOMMIT")
-    with admin.connect() as connection:
-        connection.execute(text(f'CREATE DATABASE "{name}"'))
+    created: list[str] = []
+
+    def _make() -> str:
+        name = f"db_{uuid.uuid4().hex[:12]}"
+        with admin.connect() as connection:
+            connection.execute(text(f'CREATE DATABASE "{name}"'))
+        created.append(name)
+        return make_url(postgres_url).set(database=name).render_as_string(hide_password=False)
+
     try:
-        yield make_url(postgres_url).set(database=name).render_as_string(hide_password=False)
+        yield _make
     finally:
         with admin.connect() as connection:
-            connection.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
+            for name in created:
+                connection.execute(text(f'DROP DATABASE "{name}" WITH (FORCE)'))
         admin.dispose()
+
+
+@pytest.fixture
+def empty_database_url(make_database: Callable[[], str]) -> str:
+    return make_database()
 
 
 # --- metadata-store objects ----------------------------------------------------------------

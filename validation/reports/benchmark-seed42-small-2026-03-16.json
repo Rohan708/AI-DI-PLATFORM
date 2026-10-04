@@ -1,0 +1,87 @@
+{
+  "recall": 0.0,
+  "precision": null,
+  "relationship_recall": 0.0,
+  "relationship_precision": null,
+  "by_category": {
+    "structural": {
+      "expected": 3,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "relational": {
+      "expected": 2,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "column_value": {
+      "expected": 3,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "business_rule": {
+      "expected": 2,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "time_series": {
+      "expected": 3,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "row_outlier": {
+      "expected": 0,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "cross_system": {
+      "expected": 0,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "semantic": {
+      "expected": 0,
+      "caught": 0,
+      "false_alarms": 0
+    },
+    "db_health": {
+      "expected": 0,
+      "caught": 0,
+      "false_alarms": 0
+    }
+  },
+  "missed": [
+    "drop_column:shop.products.weight_grams",
+    "widen_column_type:shop.orders.channel",
+    "drop_primary_key:legacy.INV_LINE",
+    "orphan_orders:shop.orders.cust_no",
+    "duplicate_customers:shop.customers.email",
+    "null_spike:shop.addresses.postal_code",
+    "country_variants:shop.addresses.country",
+    "negative_quantity:shop.order_items.quantity",
+    "skipped_load:reporting.daily_sales",
+    "skipped_load:reporting.customer_summary",
+    "half_load:shop.orders",
+    "ship_before_order:shop.shipments.shipped_at",
+    "invoice_total_mismatch:legacy.INV_HDR.TOTAL_AMT"
+  ],
+  "false_alarms": [],
+  "relationships_missed": [
+    "shop.categories(parent_id) -> shop.categories(id)",
+    "shop.products(category_id) -> shop.categories(id)",
+    "shop.addresses(customer_id) -> shop.customers(id)",
+    "shop.order_items(order_id) -> shop.orders(order_id)",
+    "shop.orders(cust_no) -> shop.customers(id)",
+    "shop.orders(ship_addr) -> shop.addresses(id)",
+    "shop.order_items(product_id) -> shop.products(id)",
+    "shop.payments(order_ref) -> shop.orders(order_id)",
+    "shop.shipments(ord_id) -> shop.orders(order_id)",
+    "legacy.CUST_MASTER(EXT_REF) -> shop.customers(customer_code)",
+    "legacy.INV_HDR(CUSTID) -> legacy.CUST_MASTER(CUSTID)",
+    "legacy.INV_LINE(INV_NO) -> legacy.INV_HDR(INV_NO)",
+    "legacy.INV_LINE(ITEM_CD) -> shop.products(sku)",
+    "legacy.INV_LINE_TAX(INV_NO, LINE_NO) -> legacy.INV_LINE(INV_NO, LINE_NO)",
+    "reporting.customer_summary(customer_id) -> shop.customers(id)"
+  ],
+  "relationships_false": []
+}

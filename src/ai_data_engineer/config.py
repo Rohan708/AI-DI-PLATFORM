@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     # Connections to customer databases are configured per data source (Stage 1.3),
     # not as global settings.
 
+    # The messy test lab's own database (Stage 1.2). Never a customer database.
+    lab_database_url: SecretStr | None = None
+
     # Alerting
     slack_webhook_url: SecretStr | None = None
 

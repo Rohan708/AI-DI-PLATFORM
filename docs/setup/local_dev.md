@@ -34,6 +34,16 @@ In `.env`, set `POSTGRES_PASSWORD` to a value of your choice and use the same pa
 
 When Docker isn't running locally, integration tests are **skipped** with a reason. That is not the same as passing. In CI they **fail** instead of skipping.
 
+## The test lab (Stage 1.2)
+`docker compose up -d` also starts `aide-lab-postgres` on port 5433, the fake company database. Set the `LAB_POSTGRES_*` and `AIDE_LAB_DATABASE_URL` values in `.env` (see `.env.example`), then:
+
+```bash
+aide lab run quick --size small
+aide lab score
+```
+
+See [`docs/design/test_lab.md`](../design/test_lab.md) for everything else.
+
 ## Looking at the local database
 After `docker compose up -d` and `alembic upgrade head`, you can inspect the tables with:
 

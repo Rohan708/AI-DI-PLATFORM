@@ -17,5 +17,26 @@ services:
       timeout: 3s
       retries: 10
 
+  # The messy test lab: plays "the customer's database". pg_stat_statements is
+  # preloaded so the lab's application queries leave query-log evidence (Stage 1.4).
+  lab-postgres:
+    image: postgres:16-alpine
+    container_name: aide-lab-postgres
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements"]
+    environment:
+      POSTGRES_USER: ${LAB_POSTGRES_USER:-lab}
+      POSTGRES_PASSWORD: ${LAB_POSTGRES_PASSWORD:?set LAB_POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${LAB_POSTGRES_DB:-shopco}
+    ports:
+      - "${LAB_POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - aide_lab_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${LAB_POSTGRES_USER:-lab} -d ${LAB_POSTGRES_DB:-shopco}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   aide_pgdata:
+  aide_lab_pgdata:

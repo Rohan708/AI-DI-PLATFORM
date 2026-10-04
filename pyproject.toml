@@ -17,7 +17,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Fake-data generation for the test lab / demo database.
+lab = ["faker>=30"]
 dev = [
+    "faker>=30",
     "pytest>=8.2",
     "testcontainers[postgres]>=4.15",
     "ruff>=0.6",
@@ -62,6 +65,8 @@ select = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S105", "S106"]  # assert + fake passwords are fine in tests
+# The test lab needs seeded, reproducible pseudo-randomness on purpose (not security).
+"src/ai_data_engineer/lab/**" = ["S311"]
 
 # ---------------------------------------------------------------------------
 # mypy
@@ -74,7 +79,7 @@ mypy_path = "src"
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = ["testcontainers.*"]
+module = ["testcontainers.*", "faker.*"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------

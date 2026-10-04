@@ -27,6 +27,7 @@ Customer DBs (Postgres, MySQL, MSSQL, Snowflake, …) — read-only
 | Package | Responsibility | Stage | AI allowed? |
 |---|---|---|---|
 | `graph` | Metadata store schema, versioning, graph queries | 1.1 | No |
+| `lab` | Messy test lab (fake company DB), anomaly injector, answer key, benchmark scorer | 1.2 | No |
 | `ingestion` | One adapter per database type (Postgres first) | 1.3 | No |
 | `discovery` *(to add)* | Relationship inference, auto-documentation | 1.4 | No (AI review in Stage 2) |
 | `detection` | Deterministic checks + statistics → findings | 1.5 | No |

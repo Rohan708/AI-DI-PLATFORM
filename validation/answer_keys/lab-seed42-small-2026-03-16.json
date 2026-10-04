@@ -1,0 +1,400 @@
+{
+  "seed": 42,
+  "size": "small",
+  "current_day": "2026-03-16",
+  "anomalies": [
+    {
+      "scenario": "drop_column",
+      "category": "structural",
+      "table": "shop.products",
+      "column": "weight_grams",
+      "check_hint": "schema_drift_column_removed",
+      "detect_stage": "1.5",
+      "description": "Column weight_grams was dropped from shop.products",
+      "effective_day": "2026-03-16",
+      "details": {},
+      "related_tables": []
+    },
+    {
+      "scenario": "widen_column_type",
+      "category": "structural",
+      "table": "shop.orders",
+      "column": "channel",
+      "check_hint": "type_drift",
+      "detect_stage": "1.5",
+      "description": "shop.orders.channel changed from varchar(20) to varchar(50)",
+      "effective_day": "2026-03-16",
+      "details": {
+        "after": "character varying(50)",
+        "before": "character varying(20)"
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "drop_primary_key",
+      "category": "structural",
+      "table": "legacy.INV_LINE",
+      "column": null,
+      "check_hint": "primary_key_removed",
+      "detect_stage": "1.5",
+      "description": "legacy.INV_LINE lost its primary key (\"INV_NO\", \"LINE_NO\")",
+      "effective_day": "2026-03-16",
+      "details": {},
+      "related_tables": []
+    },
+    {
+      "scenario": "orphan_orders",
+      "category": "relational",
+      "table": "shop.orders",
+      "column": "cust_no",
+      "check_hint": "orphan_rows",
+      "detect_stage": "1.4",
+      "description": "56 orders reference customer ids that don't exist in shop.customers",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 56,
+        "fraction": 0.02
+      },
+      "related_tables": [
+        "reporting.customer_summary"
+      ]
+    },
+    {
+      "scenario": "duplicate_customers",
+      "category": "relational",
+      "table": "shop.customers",
+      "column": "email",
+      "check_hint": "duplicate_entities",
+      "detect_stage": "1.5",
+      "description": "32 customers were duplicated (same name, email differs only by case)",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 32,
+        "fraction": 0.03
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "null_spike",
+      "category": "column_value",
+      "table": "shop.addresses",
+      "column": "postal_code",
+      "check_hint": "null_rate_spike",
+      "detect_stage": "1.5",
+      "description": "postal_code set to NULL on 102 addresses (normally 0% NULL)",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 102,
+        "fraction": 0.08
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "country_variants",
+      "category": "column_value",
+      "table": "shop.addresses",
+      "column": "country",
+      "check_hint": "inconsistent_categories",
+      "detect_stage": "1.5",
+      "description": "154 'US' values rewritten as 'USA' / 'United States'",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 154,
+        "new_values": [
+          "USA",
+          "United States"
+        ]
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "negative_quantity",
+      "category": "column_value",
+      "table": "shop.order_items",
+      "column": "quantity",
+      "check_hint": "out_of_range",
+      "detect_stage": "1.5",
+      "description": "35 order lines got a negative quantity (minimum was 1)",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 35
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "skipped_load",
+      "category": "time_series",
+      "table": "reporting.daily_sales",
+      "column": null,
+      "check_hint": "freshness",
+      "detect_stage": "1.5",
+      "description": "The nightly ETL skipped its run; the table was not refreshed",
+      "effective_day": "2026-03-16",
+      "details": {
+        "missing_day": "2026-03-16"
+      },
+      "related_tables": []
+    },
+    {
+      "scenario": "skipped_load",
+      "category": "time_series",
+      "table": "reporting.customer_summary",
+      "column": null,
+      "check_hint": "freshness",
+      "detect_stage": "1.5",
+      "description": "The nightly ETL skipped its run; the table was not refreshed",
+      "effective_day": "2026-03-16",
+      "details": {},
+      "related_tables": []
+    },
+    {
+      "scenario": "half_load",
+      "category": "time_series",
+      "table": "shop.orders",
+      "column": null,
+      "check_hint": "volume_drop",
+      "detect_stage": "1.5",
+      "description": "Only 40% of the usual daily orders arrived",
+      "effective_day": "2026-03-16",
+      "details": {
+        "volume_factor": 0.4
+      },
+      "related_tables": [
+        "shop.order_items",
+        "shop.payments",
+        "legacy.INV_HDR",
+        "legacy.INV_LINE",
+        "legacy.INV_LINE_TAX",
+        "reporting.daily_sales"
+      ]
+    },
+    {
+      "scenario": "ship_before_order",
+      "category": "business_rule",
+      "table": "shop.shipments",
+      "column": "shipped_at",
+      "check_hint": "rule:shipped_at>=order_date",
+      "detect_stage": "2",
+      "description": "27 shipments have shipped_at two days before their order date",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 27
+      },
+      "related_tables": [
+        "shop.orders"
+      ]
+    },
+    {
+      "scenario": "invoice_total_mismatch",
+      "category": "business_rule",
+      "table": "legacy.INV_HDR",
+      "column": "TOTAL_AMT",
+      "check_hint": "rule:TOTAL_AMT=sum(INV_LINE.LINE_AMT)",
+      "detect_stage": "2",
+      "description": "24 invoice totals inflated by 10% versus the sum of their lines",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 24,
+        "factor": 1.1
+      },
+      "related_tables": [
+        "legacy.INV_LINE"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from_table": "shop.categories",
+      "from_columns": [
+        "parent_id"
+      ],
+      "to_table": "shop.categories",
+      "to_columns": [
+        "id"
+      ],
+      "declared": true,
+      "note": ""
+    },
+    {
+      "from_table": "shop.products",
+      "from_columns": [
+        "category_id"
+      ],
+      "to_table": "shop.categories",
+      "to_columns": [
+        "id"
+      ],
+      "declared": true,
+      "note": ""
+    },
+    {
+      "from_table": "shop.addresses",
+      "from_columns": [
+        "customer_id"
+      ],
+      "to_table": "shop.customers",
+      "to_columns": [
+        "id"
+      ],
+      "declared": true,
+      "note": ""
+    },
+    {
+      "from_table": "shop.order_items",
+      "from_columns": [
+        "order_id"
+      ],
+      "to_table": "shop.orders",
+      "to_columns": [
+        "order_id"
+      ],
+      "declared": true,
+      "note": ""
+    },
+    {
+      "from_table": "shop.orders",
+      "from_columns": [
+        "cust_no"
+      ],
+      "to_table": "shop.customers",
+      "to_columns": [
+        "id"
+      ],
+      "declared": false,
+      "note": "misnamed"
+    },
+    {
+      "from_table": "shop.orders",
+      "from_columns": [
+        "ship_addr"
+      ],
+      "to_table": "shop.addresses",
+      "to_columns": [
+        "id"
+      ],
+      "declared": false,
+      "note": "misnamed"
+    },
+    {
+      "from_table": "shop.order_items",
+      "from_columns": [
+        "product_id"
+      ],
+      "to_table": "shop.products",
+      "to_columns": [
+        "id"
+      ],
+      "declared": false,
+      "note": ""
+    },
+    {
+      "from_table": "shop.payments",
+      "from_columns": [
+        "order_ref"
+      ],
+      "to_table": "shop.orders",
+      "to_columns": [
+        "order_id"
+      ],
+      "declared": false,
+      "note": ""
+    },
+    {
+      "from_table": "shop.shipments",
+      "from_columns": [
+        "ord_id"
+      ],
+      "to_table": "shop.orders",
+      "to_columns": [
+        "order_id"
+      ],
+      "declared": false,
+      "note": ""
+    },
+    {
+      "from_table": "legacy.CUST_MASTER",
+      "from_columns": [
+        "EXT_REF"
+      ],
+      "to_table": "shop.customers",
+      "to_columns": [
+        "customer_code"
+      ],
+      "declared": false,
+      "note": "cross-schema, links legacy to the app by business code; NULL for legacy-only"
+    },
+    {
+      "from_table": "legacy.INV_HDR",
+      "from_columns": [
+        "CUSTID"
+      ],
+      "to_table": "legacy.CUST_MASTER",
+      "to_columns": [
+        "CUSTID"
+      ],
+      "declared": false,
+      "note": ""
+    },
+    {
+      "from_table": "legacy.INV_LINE",
+      "from_columns": [
+        "INV_NO"
+      ],
+      "to_table": "legacy.INV_HDR",
+      "to_columns": [
+        "INV_NO"
+      ],
+      "declared": false,
+      "note": ""
+    },
+    {
+      "from_table": "legacy.INV_LINE",
+      "from_columns": [
+        "ITEM_CD"
+      ],
+      "to_table": "shop.products",
+      "to_columns": [
+        "sku"
+      ],
+      "declared": false,
+      "note": "cross-schema, by business code"
+    },
+    {
+      "from_table": "legacy.INV_LINE_TAX",
+      "from_columns": [
+        "INV_NO",
+        "LINE_NO"
+      ],
+      "to_table": "legacy.INV_LINE",
+      "to_columns": [
+        "INV_NO",
+        "LINE_NO"
+      ],
+      "declared": false,
+      "note": "composite key"
+    },
+    {
+      "from_table": "reporting.customer_summary",
+      "from_columns": [
+        "customer_id"
+      ],
+      "to_table": "shop.customers",
+      "to_columns": [
+        "id"
+      ],
+      "declared": false,
+      "note": ""
+    }
+  ],
+  "normal_patterns": [
+    "shop.customers.middle_name is ~60% NULL (most people have none)",
+    "shop.customers.phone is ~40% NULL (optional field)",
+    "shop.products.weight_grams is NULL for every Digital product",
+    "shop.shipments.delivered_at is NULL while a parcel is in transit",
+    "shop.orders.ship_addr is NULL for customers without an address",
+    "legacy.CUST_MASTER.EXT_REF is NULL for legacy-only customers (~5%)",
+    "legacy CHAR columns are space-padded (CUST_NM, CUSTID, STAT_CD)",
+    "order volume is ~40% lower on weekends (seasonality)",
+    "shop.orders.status mix shifts daily as orders move placed -> shipped -> delivered"
+  ]
+}

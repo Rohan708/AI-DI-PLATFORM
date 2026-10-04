@@ -1,11 +1,11 @@
 # AI Data Engineer — project guide for Claude
 
-**Current stage:** Stage 1.2 — planning (messy test lab + benchmark). Stage 1.1 ✅ done 2026-10-04: 50/50 tests pass (0 skipped), `alembic upgrade head` creates all 13 tables locally. Design: [`docs/design/metadata_store.md`](docs/design/metadata_store.md).
+**Current stage:** Stage 1.3 — planning (Postgres adapter). Stage 1.2 ✅ done 2026-10-05: 88/88 tests pass; `aide lab run standard --size small` builds ShopCo, plants 13 anomalies, writes the answer key; `aide lab score` reports 0/13 caught, 0/15 relationships (nothing scans yet). Designs: [`docs/design/metadata_store.md`](docs/design/metadata_store.md), [`docs/design/test_lab.md`](docs/design/test_lab.md).
 
 **Environment:** Python 3.12 (conda env `py312`). Docker Desktop installed (2026-10-04). Git remote to be connected later.
 **Collaboration:** Claude proposes plans and writes code only after approval; the user runs installs/tests and Claude gives exact commands.
 
-Vision & full design: [`docs/product/vision_and_roadmap.md`](docs/product/vision_and_roadmap.md). Historical source: [`docs/PROJECT_BRIEF_AI_Data_Engineer.md`](docs/PROJECT_BRIEF_AI_Data_Engineer.md). It assumed "Snowflake + dbt only". **That is superseded by this file.** Its design ideas (versioning, findings, health score, human approval) still apply.
+Vision & full design: [`docs/product/vision_and_roadmap.md`](docs/product/vision_and_roadmap.md). Selling + plain-language logic: [`docs/product/sales_and_logic.md`](docs/product/sales_and_logic.md). Historical source: [`docs/PROJECT_BRIEF_AI_Data_Engineer.md`](docs/PROJECT_BRIEF_AI_Data_Engineer.md). It assumed "Snowflake + dbt only". **That is superseded by this file.** Its design ideas (versioning, findings, health score, human approval) still apply.
 
 ---
 
@@ -71,7 +71,7 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 
 **Stage 1 — Core engine on PostgreSQL (CLI only).**
 - 1.1 ✅ Metadata store schema v2 + Alembic: data sources, asset/column identity + versions, profile time series, relationships (declared/inferred, with confidence), rules, ingestion runs, findings. Done when: migrations up/down clean, constraint + graph-traversal tests pass.
-- 1.2 **Messy test lab + benchmark:** a seeded generator for a realistic OLTP database (e-commerce/billing) with undeclared/misnamed FKs, legacy naming, composite keys, a nightly "ETL" simulator, an anomaly injector with a written answer key, and a **scorer** (caught / missed / false alarms per category). Done when: one command builds it reproducibly in Docker and the scorer runs.
+- 1.2 ✅ **Messy test lab + benchmark:** a seeded generator for a realistic OLTP database (e-commerce/billing) with undeclared/misnamed FKs, legacy naming, composite keys, a nightly "ETL" simulator, an anomaly injector with a written answer key, and a **scorer** (caught / missed / false alarms per category). Done when: one command builds it reproducibly in Docker and the scorer runs.
 - 1.3 Postgres adapter: introspection + safe in-DB profiling (read-only txn, timeouts, sampling, `pg_stats` where cheap). Done when: metadata store matches the lab DB by manual comparison.
 - 1.4 Relationship discovery: declared FKs, name similarity, value inclusion, query-log joins (`pg_stat_statements`), then orphan + cardinality checks + **auto-documentation** (data dictionary + relationship map, Markdown/Mermaid). Done when: discovers the lab's hidden FKs with ≥ the answer key's expected recall; false positives explainable.
 - 1.5 Detection: structural, column-value, time-series (volume, freshness, null rate, distinct/duplicates), cold-start safe. Done when: all injected anomalies caught; false positives explainable.
@@ -102,4 +102,6 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - `validation/jaffle_shop/` is a git-ignored nested clone pinned to branch `aide-dbt1` (commit `7d0d8de`, dbt 1.x).
 - Rename policy for stable keys (ADR 0001) to be decided in Stage 1.3.
 - Job/ETL-run tracking (ADR 0002, superseded) returns with query-log reading in Stage 1.4+.
+- Scanners/adapters (Stage 1.3) must exclude the lab's bookkeeping schema `aide_lab`, and should support per-source schema include/exclude lists.
+- The lab's `run_plan` takes an `on_day_end` hook; Stage 1.3 plugs the Postgres scan into it so the metadata store gets one scan per simulated day (use the simulated date as `observed_at`).
 - Migrations live in `src/ai_data_engineer/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).

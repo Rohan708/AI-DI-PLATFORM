@@ -2,7 +2,7 @@
 
 A database-agnostic, AI-assisted anomaly detection engine. Point it at any database (transactional or warehouse, however messy) and it discovers the structure and hidden relationships, learns what normal looks like, and finds anomalies with evidence. AI proposes rules; humans approve them; the engine enforces them.
 
-**Status:** Stage 1.1 done (metadata store); Stage 1.2 (test lab) next. Read [`docs/product/vision_and_roadmap.md`](docs/product/vision_and_roadmap.md) for the full picture, and [`CLAUDE.md`](CLAUDE.md) for the current stage and rules.
+**Status:** Stage 1.1 done (metadata store); Stage 1.2 done (test lab + benchmark); Stage 1.3 (Postgres adapter) next. Read [`docs/product/vision_and_roadmap.md`](docs/product/vision_and_roadmap.md) for the full picture, and [`CLAUDE.md`](CLAUDE.md) for the current stage and rules.
 
 ## Quickstart
 ```bash
