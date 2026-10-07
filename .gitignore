@@ -37,3 +37,6 @@ Thumbs.db
 
 # Cloned dbt sample project (its own git repo)
 validation/jaffle_shop/
+
+# Auto-generated documentation (aide docs)
+generated_docs/

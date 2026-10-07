@@ -7,7 +7,7 @@ metadata store collects one "nightly" scan per simulated day.
 
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from datetime import date
+from datetime import UTC, date, datetime, time, timedelta
 
 from sqlalchemy import Engine
 
@@ -18,6 +18,15 @@ from ai_data_engineer.lab.sizes import DEFAULT_START_DATE
 from ai_data_engineer.lab.state import LabState, load_state, save_state
 
 DayHook = Callable[[date], None]
+
+# The lab's "nightly scan" runs at 03:00 the morning after a simulated day, i.e. after
+# the nightly ETL (02:00) has finished.
+SCAN_HOUR = 3
+
+
+def lab_scan_time(day: date) -> datetime:
+    """When the scan of simulated ``day`` happens, on the simulated calendar."""
+    return datetime.combine(day + timedelta(days=1), time(SCAN_HOUR), tzinfo=UTC)
 
 
 @dataclass(frozen=True)

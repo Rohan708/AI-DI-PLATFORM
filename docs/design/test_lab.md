@@ -109,7 +109,12 @@ Faults (`skipped_load`, `half_load`) are scheduled and happen on the **next** si
 | `standard` | build → 14 clean days (each scanned) → inject **all** scenarios → 1 more day |
 | `quick` | build → 3 clean days → inject the **Stage-1** scenarios → 1 more day |
 
-Detection needs history, so plans simulate clean days first. From Stage 1.3 on, a **scan of the lab runs after each simulated day** (the `on_day_end` hook), just like a nightly scan of a real customer database.
+Detection needs history, so plans simulate clean days first. With `--scan SOURCE` (Stage 1.3), a **scan of the lab runs after each simulated day**, stamped 03:00 the next simulated morning (after the 02:00 ETL), just like a nightly scan of a real customer database:
+
+```bash
+aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
+aide lab run standard --size small --scan shopco
+```
 
 ---
 
@@ -143,12 +148,21 @@ Until detection exists (Stage 1.5), the score is 0 caught, which is expected.
 | Command | Does |
 |---|---|
 | `aide lab build [--seed 42] [--size default]` | (re)create the lab with history |
-| `aide lab tick [--days N]` | simulate more days |
+| `aide lab tick [--days N] [--scan SOURCE]` | simulate more days (optionally scanning after each) |
 | `aide lab inject SCENARIO …` | plant anomalies (effective next day) |
-| `aide lab run [standard\|quick] [--seed] [--size]` | full plan + answer key written |
+| `aide lab run [standard\|quick] [--seed] [--size] [--scan SOURCE]` | full plan + answer key written (optionally scanning after each day) |
 | `aide lab status` | current simulated day, pending faults, planted count |
 | `aide lab scenarios` | list scenarios and plans |
 | `aide lab answer-key [--out DIR]` | write the answer key |
 | `aide lab score [--data-source NAME] [--out DIR]` | benchmark report |
+
+### Full benchmark loop (from Stage 1.4)
+```bash
+aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
+aide lab run standard --size small --scan shopco   # build, nightly scans, plant, scan
+aide discover shopco                               # relationships + orphan checks
+aide lab score --data-source shopco                # caught / missed / false alarms
+aide docs shopco                                   # generated data dictionary + map
+```
 
 Needs `AIDE_LAB_DATABASE_URL` (see `.env.example`) and the `lab-postgres` service from `docker-compose.yml`.

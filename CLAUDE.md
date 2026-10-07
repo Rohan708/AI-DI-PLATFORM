@@ -1,6 +1,6 @@
 # AI Data Engineer — project guide for Claude
 
-**Current stage:** Stage 1.3 — planning (Postgres adapter). Stage 1.2 ✅ done 2026-10-05: 88/88 tests pass; `aide lab run standard --size small` builds ShopCo, plants 13 anomalies, writes the answer key; `aide lab score` reports 0/13 caught, 0/15 relationships (nothing scans yet). Designs: [`docs/design/metadata_store.md`](docs/design/metadata_store.md), [`docs/design/test_lab.md`](docs/design/test_lab.md).
+**Current stage:** Stage 1.4 — benchmark met on the real lab run (2026-10-05): **15/15 relationships, 1 wrong (fixed since), `orphan_orders` caught, 0 false alarms**. 163/163 tests pass incl. all integration (2026-10-07); ruff/mypy follow-ups fixed. Waiting on: `ruff check` + `mypy` clean, and the `discover shopco` re-run showing 0 wrong relationships → then 1.4 ✅ and Stage 1.5 (plan already proposed, awaiting approval). Stage 1.3 ✅ (manual real-scan check passed 2026-10-05). Stages 1.1, 1.2 ✅. Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md).
 
 **Environment:** Python 3.12 (conda env `py312`). Docker Desktop installed (2026-10-04). Git remote to be connected later.
 **Collaboration:** Claude proposes plans and writes code only after approval; the user runs installs/tests and Claude gives exact commands.
@@ -72,7 +72,7 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 **Stage 1 — Core engine on PostgreSQL (CLI only).**
 - 1.1 ✅ Metadata store schema v2 + Alembic: data sources, asset/column identity + versions, profile time series, relationships (declared/inferred, with confidence), rules, ingestion runs, findings. Done when: migrations up/down clean, constraint + graph-traversal tests pass.
 - 1.2 ✅ **Messy test lab + benchmark:** a seeded generator for a realistic OLTP database (e-commerce/billing) with undeclared/misnamed FKs, legacy naming, composite keys, a nightly "ETL" simulator, an anomaly injector with a written answer key, and a **scorer** (caught / missed / false alarms per category). Done when: one command builds it reproducibly in Docker and the scorer runs.
-- 1.3 Postgres adapter: introspection + safe in-DB profiling (read-only txn, timeouts, sampling, `pg_stats` where cheap). Done when: metadata store matches the lab DB by manual comparison.
+- 1.3 ✅ Postgres adapter: introspection + safe in-DB profiling (read-only txn, timeouts, sampling, `pg_stats` where cheap). Done when: metadata store matches the lab DB by manual comparison.
 - 1.4 Relationship discovery: declared FKs, name similarity, value inclusion, query-log joins (`pg_stat_statements`), then orphan + cardinality checks + **auto-documentation** (data dictionary + relationship map, Markdown/Mermaid). Done when: discovers the lab's hidden FKs with ≥ the answer key's expected recall; false positives explainable.
 - 1.5 Detection: structural, column-value, time-series (volume, freshness, null rate, distinct/duplicates), cold-start safe. Done when: all injected anomalies caught; false positives explainable.
 - 1.6 Findings lifecycle (dedup, status), health score, alerts + quiet-baseline mode. Done when: one command profiles, detects, scores, and alerts sensibly.
@@ -96,12 +96,18 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - [ ] Snowflake trial (account `AKZSZEW-PD17196`, jaffle_shop loaded) expires ~30 days after 2026-10-04; a new trial is fine. Used again in Stage 3.
 
 ## Backlog / known issues
-- Per-source connection config (how `data_source.connection_ref` resolves to credentials) is designed in Stage 1.3.
+- `connection_ref` = name of an env var / `.env` entry (ADR 0005); add a secrets-manager backend before hosted SaaS (Stage 4).
 - Snowflake read-only user (AIDE_SVC) + smoke test deferred to Stage 3 (scripts in `scripts/snowflake/`, guide in `docs/setup/snowflake_setup.md`).
 - pre-commit hook revisions pinned to older versions; run `pre-commit autoupdate` once.
 - `validation/jaffle_shop/` is a git-ignored nested clone pinned to branch `aide-dbt1` (commit `7d0d8de`, dbt 1.x).
-- Rename policy for stable keys (ADR 0001) to be decided in Stage 1.3.
+- Rename detection (a rename currently looks like drop + add) — decide with real data in 1.5/1.6.
 - Job/ETL-run tracking (ADR 0002, superseded) returns with query-log reading in Stage 1.4+.
-- Scanners/adapters (Stage 1.3) must exclude the lab's bookkeeping schema `aide_lab`, and should support per-source schema include/exclude lists.
-- The lab's `run_plan` takes an `on_day_end` hook; Stage 1.3 plugs the Postgres scan into it so the metadata store gets one scan per simulated day (use the simulated date as `observed_at`).
+- Lab sources must be registered with `--exclude-schemas aide_lab` (the lab's bookkeeping schema).
+- On Windows with Smart App Control, `aide.exe` and mypy's DLL can be blocked; use `python -m ai_data_engineer …` and the pure-Python mypy install (docs/setup/local_dev.md).
+- History must be recorded in time order: re-running a lab plan against the same data source fails once structure changes (simulated calendar restarts). Workaround: new source name per lab run. Fix: `aide source remove NAME` (deletes a source's metadata) — add in 1.4/1.6.
+- Views are described but not profiled (cost); revisit with per-source opt-in.
+- Discovery settings are global defaults (`discovery/settings.py`); add per-source overrides. Composite links only found with identical column names.
+- Orphan checks run on proposed relationships only at confidence >= 0.9; without `pg_stat_statements`, integer links rarely reach that (no query-log signal) — document for customers.
+- Findings lifecycle is minimal (dedup + resolve in `detection/recording.py`); alerts/reopen/quiet-baseline in 1.6.
+- Freshness on Postgres has no native "last modified"; 1.5 must derive it from timestamp-column maxima + `pg_stat_user_tables` counters stored in `asset_profile.properties.pg_stat`.
 - Migrations live in `src/ai_data_engineer/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).

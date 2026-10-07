@@ -2,7 +2,7 @@
 
 *The database **our tool** uses to remember everything it learns about customer databases. Code: `src/ai_data_engineer/graph/`. Migration: `src/ai_data_engineer/migrations/versions/v0001_initial_schema.py`. Rationale: [ADR 0004](../decisions/0004-identity-version-profile.md).*
 
-Nothing in this layer touches a customer database. Adapters (Stage 1.3) read customer databases and write here; discovery and detection (Stages 1.4–1.5) read from here.
+Nothing in this layer touches a customer database. Adapters ([Stage 1.3](postgres_adapter.md)) read customer databases and `ingestion/scan.py` writes here; discovery and detection (Stages 1.4–1.5) read from here.
 
 ---
 
@@ -202,5 +202,6 @@ The single output table for every detector.
 | Job / ETL-run tracking, query logs | Stage 1.4+ (when we read `pg_stat_statements` / query history) |
 | Owners, alert channels, health-score snapshots | Stage 1.6 |
 | Finding feedback history / audit log | Stage 4 |
+| Stored query-log history (joins are kept only as relationship evidence for now) | Stage 6 (root cause) |
 | Postgres row-level security per tenant | Stage 4 |
 | Rename detection policy | Stage 1.3 |

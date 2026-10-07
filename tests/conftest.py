@@ -47,6 +47,8 @@ def postgres_url() -> Iterator[str]:
 
     try:
         container = PostgresContainer("postgres:16-alpine", driver="psycopg")
+        # Query statistics, so the lab's application joins are visible to discovery.
+        container.with_command("postgres -c shared_preload_libraries=pg_stat_statements")
         container.start()
     except Exception as exc:
         # In CI a missing Docker daemon is a real failure; locally, skip with a clear reason.

@@ -229,8 +229,16 @@ def assert_safe_lab_target(conn: Connection) -> None:
         )
     )
     unexpected = schemas - {"public", *LAB_SCHEMAS}
+    # Tables/views in public, ignoring objects owned by extensions: the lab itself
+    # installs pg_stat_statements, whose views live in public.
     public_tables = conn.scalar(
-        text("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public'")
+        text(
+            "SELECT count(*) FROM pg_class c "
+            "JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p', 'v', 'm', 'f') "
+            "AND NOT EXISTS (SELECT 1 FROM pg_depend d WHERE d.classid = 'pg_class'::regclass "
+            "AND d.objid = c.oid AND d.deptype = 'e')"
+        )
     )
     if unexpected or public_tables:
         raise LabSafetyError(

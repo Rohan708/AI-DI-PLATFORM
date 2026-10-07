@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from datetime import date
 from pathlib import Path
 
 from sqlalchemy import Engine, select
@@ -10,8 +11,20 @@ from sqlalchemy.orm import Session
 from ai_data_engineer.config import get_settings
 from ai_data_engineer.db import create_db_engine
 from ai_data_engineer.graph.models import DataSource
+from ai_data_engineer.ingestion.cli import store_session
+from ai_data_engineer.ingestion.scan import scan_source
+from ai_data_engineer.ingestion.sources import get_source
 from ai_data_engineer.lab.answer_key import AnswerKey, write_answer_key
-from ai_data_engineer.lab.runner import PLANS, answer_key, build_lab, inject, run_plan, tick
+from ai_data_engineer.lab.runner import (
+    PLANS,
+    DayHook,
+    answer_key,
+    build_lab,
+    inject,
+    lab_scan_time,
+    run_plan,
+    tick,
+)
 from ai_data_engineer.lab.scenarios import SCENARIOS
 from ai_data_engineer.lab.scorer import (
     FoundFinding,
@@ -38,6 +51,7 @@ def add_lab_parser(subcommands: "argparse._SubParsersAction[argparse.ArgumentPar
 
     p = commands.add_parser("tick", help="simulate more business days")
     p.add_argument("--days", type=int, default=1)
+    p.add_argument("--scan", metavar="SOURCE", help="scan this data source after each day")
 
     p = commands.add_parser("inject", help="plant anomalies (applied from the next day)")
     p.add_argument("scenarios", nargs="+", metavar="SCENARIO")
@@ -46,6 +60,7 @@ def add_lab_parser(subcommands: "argparse._SubParsersAction[argparse.ArgumentPar
     p.add_argument("plan", nargs="?", choices=sorted(PLANS), default="standard")
     p.add_argument("--seed", type=int, default=DEFAULT_SEED)
     p.add_argument("--size", choices=sorted(SIZES), default="default")
+    p.add_argument("--scan", metavar="SOURCE", help="scan this data source after each day")
 
     commands.add_parser("scenarios", help="list available scenarios and plans")
     commands.add_parser("status", help="show the lab's current simulated day and injections")
@@ -76,14 +91,16 @@ def run_lab_command(args: argparse.Namespace) -> int:
             state = build_lab(engine, seed=args.seed, size=args.size)
             print(f"lab built: seed={state.seed} size={state.size} through {state.current_day}")
         elif command == "tick":
-            days = tick(engine, args.days)
+            days = tick(engine, args.days, on_day_end=_scan_hook(args.scan))
             print(f"simulated {len(days)} day(s); now at {days[-1]}")
         elif command == "inject":
             for entry in inject(engine, args.scenarios):
                 print(f"planted {entry.scenario}: {entry.description}")
             print("they take effect on the next simulated day (`aide lab tick`)")
         elif command == "run":
-            key = run_plan(engine, args.plan, seed=args.seed, size=args.size)
+            key = run_plan(
+                engine, args.plan, seed=args.seed, size=args.size, on_day_end=_scan_hook(args.scan)
+            )
             _write_key(key, ANSWER_KEY_DIR)
             print(f"plan '{args.plan}' done: {len(key.anomalies)} anomalies planted")
         elif command == "status":
@@ -99,6 +116,21 @@ def run_lab_command(args: argparse.Namespace) -> int:
     finally:
         engine.dispose()
     return 0
+
+
+def _scan_hook(source_name: str | None) -> DayHook | None:
+    """Scan ``source_name`` after each simulated day, stamped with the simulated time."""
+    if source_name is None:
+        return None
+
+    def hook(day: date) -> None:
+        with store_session() as session:
+            result = scan_source(
+                session, get_source(session, source_name), observed_at=lab_scan_time(day)
+            )
+        print(f"  {day}: scan {result.summary()}")
+
+    return hook
 
 
 def _lab_engine() -> Engine:

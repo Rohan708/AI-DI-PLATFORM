@@ -295,3 +295,12 @@ def _quoted(table: str) -> str:
 
 def _details(key: AnswerKey, scenario: str) -> dict[str, Any]:
     return next(a.details for a in key.anomalies if a.scenario == scenario)
+
+
+def test_rebuilding_an_existing_lab_is_allowed(make_database: Callable[[], str]) -> None:
+    """The lab's own pg_stat_statements views in public must not trip the safety guard."""
+    engine = _engine(make_database)
+    build_lab(engine, seed=SEED, size=SIZE)
+    state = build_lab(engine, seed=SEED, size=SIZE)  # second build over the first
+    assert state.current_day == DEFAULT_START_DATE + timedelta(days=SIZES[SIZE].history_days - 1)
+    engine.dispose()

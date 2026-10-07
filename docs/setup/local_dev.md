@@ -38,9 +38,15 @@ When Docker isn't running locally, integration tests are **skipped** with a reas
 `docker compose up -d` also starts `aide-lab-postgres` on port 5433, the fake company database. Set the `LAB_POSTGRES_*` and `AIDE_LAB_DATABASE_URL` values in `.env` (see `.env.example`), then:
 
 ```bash
-aide lab run quick --size small
-aide lab score
+aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
+aide lab run standard --size small --scan shopco
+aide source show shopco
+aide discover shopco
+aide lab score --data-source shopco
+aide docs shopco
 ```
+
+Re-running a lab plan? Register a new source name (e.g. `shopco2`), because scan history must move forward in time.
 
 See [`docs/design/test_lab.md`](../design/test_lab.md) for everything else.
 
@@ -50,6 +56,20 @@ After `docker compose up -d` and `alembic upgrade head`, you can inspect the tab
 ```bash
 docker exec -it aide-postgres psql -U aide -d aide -c "\dt"
 ```
+
+## Troubleshooting
+- **`ImportError: DLL load failed … An Application Control policy has blocked this file`** (mypy, Windows): Smart App Control is blocking mypy's compiled extension. Install the pure-Python build instead (slower, same results):
+  ```powershell
+  python -m pip install --force-reinstall --no-deps --no-binary mypy "mypy>=1.11"
+  ```
+- **`Program 'aide.exe' failed to run: An Application Control policy has blocked this file`**: the same Smart App Control block, this time on the `aide.exe` launcher pip generates. Run the CLI through Python instead; it's identical:
+  ```powershell
+  python -m ai_data_engineer source list
+  ```
+  Everywhere the docs say `aide …`, you can write `python -m ai_data_engineer …`.
+- **Wrong environment:** the prompt must show `(py312)`, not `(base)`. Run `conda activate py312` first.
+- **`docker compose` says a password variable is missing:** your `.env` lacks a line from `.env.example` (e.g. the `LAB_POSTGRES_*` block).
+- **Integration tests are skipped:** Docker Desktop isn't running (bottom-left must say "Engine running").
 
 ## Rules to remember
 - Never commit `.env` or `*.p8`. `.gitignore` and the `detect-private-key` pre-commit hook guard against this.
