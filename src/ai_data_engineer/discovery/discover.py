@@ -2,7 +2,8 @@
 
 1. load what we know (latest scan): tables, columns, measurements, keys
 2. declared FKs -> relationships (certain)
-3. read the query log -> joins the application runs
+3. read the query log -> joins the application runs (merged with joins remembered
+   from earlier runs, since the database's statistics reset on restart)
 4. generate candidates (name / type / measurement gates), rank them, and check the top
    ``max_inclusion_checks`` in the database (row-level value overlap)
 5. score -> keep >= propose_threshold -> pick one explanation per child column(s)
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Session
 from ai_data_engineer.discovery.candidates import Candidate, generate_candidates
 from ai_data_engineer.discovery.catalog import Catalog, load_catalog
 from ai_data_engineer.discovery.checks import CheckResult, run_relationship_checks
+from ai_data_engineer.discovery.joinmemory import remember_joins
 from ai_data_engineer.discovery.querylog import ColumnRef, join_counts
 from ai_data_engineer.discovery.scoring import choose_best, score
 from ai_data_engineer.discovery.settings import DEFAULT_DISCOVERY_SETTINGS, DiscoverySettings
@@ -60,7 +62,7 @@ class DiscoveryResult:
             f"{self.query_log_statements} logged statements read); "
             f"relationships: {len(self.sync.created)} new, {len(self.sync.retired)} retired; "
             f"findings: {self.checks.opened} new, {self.checks.refreshed} still open, "
-            f"{self.checks.resolved} resolved"
+            f"{self.checks.resolved} resolved, {self.checks.not_rechecked} not re-checked"
         )
 
 
@@ -83,9 +85,12 @@ def discover(
     with adapter_factory(source) as adapter:
         stats = adapter.read_query_log(settings.query_log_limit)
         result.query_log_statements = len(stats)
-        joins: Counter[frozenset[ColumnRef]] = Counter()
+        seen: Counter[frozenset[ColumnRef]] = Counter()
         for pair, calls in join_counts(stats).items():
-            joins[_canonical(pair, catalog)] += calls
+            seen[_canonical(pair, catalog)] += calls
+        # Merge with joins remembered from earlier runs (the database's own statistics
+        # are wiped on restart), then use the remembered totals as evidence.
+        joins = remember_joins(session, catalog, seen, now)
 
         candidates = generate_candidates(catalog, declared_children, settings)
         for c in candidates:

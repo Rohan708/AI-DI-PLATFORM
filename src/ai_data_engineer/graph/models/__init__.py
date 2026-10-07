@@ -24,6 +24,7 @@ from ai_data_engineer.graph.models.enums import (
 )
 from ai_data_engineer.graph.models.findings import Finding, finding_fingerprint
 from ai_data_engineer.graph.models.profiles import AssetProfile, ColumnProfile
+from ai_data_engineer.graph.models.querylog import QueryJoin
 from ai_data_engineer.graph.models.relationships import (
     Relationship,
     RelationshipColumn,
@@ -48,6 +49,7 @@ __all__ = [
     "FindingStatus",
     "IngestionRun",
     "Origin",
+    "QueryJoin",
     "Relationship",
     "RelationshipColumn",
     "RelationshipKind",

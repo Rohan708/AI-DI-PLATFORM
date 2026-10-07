@@ -7,7 +7,13 @@ from pathlib import Path
 from typing import Any
 
 from ai_data_engineer.graph.models import FindingCategory
-from ai_data_engineer.lab.schema import NORMAL_PATTERNS, TRUE_RELATIONSHIPS, ExpectedRelationship
+from ai_data_engineer.lab.schema import (
+    BASELINE_ISSUES,
+    NORMAL_PATTERNS,
+    TRUE_RELATIONSHIPS,
+    BaselineIssue,
+    ExpectedRelationship,
+)
 
 
 @dataclass(frozen=True)
@@ -67,6 +73,7 @@ class AnswerKey:
     anomalies: tuple[ExpectedAnomaly, ...]
     relationships: tuple[ExpectedRelationship, ...] = TRUE_RELATIONSHIPS
     normal_patterns: tuple[str, ...] = NORMAL_PATTERNS
+    baseline_issues: tuple[BaselineIssue, ...] = BASELINE_ISSUES
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -86,6 +93,16 @@ class AnswerKey:
                 for r in self.relationships
             ],
             "normal_patterns": list(self.normal_patterns),
+            "baseline_issues": [
+                {
+                    "category": b.category.value,
+                    "table": b.table,
+                    "column": b.column,
+                    "check_hint": b.check_hint,
+                    "description": b.description,
+                }
+                for b in self.baseline_issues
+            ],
         }
 
     def to_markdown(self) -> str:
@@ -120,6 +137,19 @@ class AnswerKey:
                 f"`{r.to_table}({', '.join(r.to_columns)})` | "
                 f"{'yes' if r.declared else '**no**'} | {r.note} |"
             )
+        out += [
+            "",
+            f"## Known baseline issues ({len(self.baseline_issues)}): "
+            "real from day one, not planted",
+            "",
+            "Finding these is correct; the scorer reports them separately.",
+            "",
+            "| Category | Where | Expected check | What |",
+            "|---|---|---|---|",
+        ]
+        for b in self.baseline_issues:
+            where = f"`{b.table}.{b.column}`" if b.column else f"`{b.table}`"
+            out.append(f"| {b.category.value} | {where} | {b.check_hint} | {b.description} |")
         out += ["", "## Normal patterns (must NOT be flagged)", ""]
         out += [f"- {pattern}" for pattern in self.normal_patterns]
         return "\n".join(out) + "\n"

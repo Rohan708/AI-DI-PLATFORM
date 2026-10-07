@@ -14,7 +14,12 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.detection.recording import latest_run_id, record_finding, resolve_finding
+from ai_data_engineer.detection.recording import (
+    active_finding,
+    latest_run_id,
+    record_finding,
+    resolve_finding,
+)
 from ai_data_engineer.discovery.catalog import Catalog, ColumnInfo, TableInfo
 from ai_data_engineer.discovery.settings import DiscoverySettings
 from ai_data_engineer.graph.models import (
@@ -37,6 +42,7 @@ class CheckResult:
     refreshed: int = 0
     resolved: int = 0
     checked: int = 0
+    not_rechecked: int = 0  # open findings whose check could not run this time
 
 
 def run_relationship_checks(
@@ -71,7 +77,37 @@ def run_relationship_checks(
                 session, catalog, rel, adapter, child_table, child_cols, parent_table,
                 parent_cols, now, run_id, settings, result,
             )  # fmt: skip
+        else:
+            _mark_not_rechecked(session, catalog, rel, now, settings, result)
     return result
+
+
+def _mark_not_rechecked(
+    session: Session,
+    catalog: Catalog,
+    rel: Relationship,
+    now: datetime,
+    settings: DiscoverySettings,
+    result: CheckResult,
+) -> None:
+    """An open orphan finding whose relationship is no longer trusted enough to check
+    stays open, but says so, instead of silently looking current."""
+    finding = active_finding(
+        session, catalog.source.tenant_id, finding_fingerprint(ORPHAN_CHECK, rel.signature)
+    )
+    if finding is None:
+        return
+    finding.evidence = {
+        **finding.evidence,
+        "rechecked": False,
+        "not_rechecked_at": now.isoformat(),
+        "not_rechecked_reason": (
+            f"relationship confidence {rel.confidence or 0:.2f} is below the "
+            f"{settings.orphan_check_min_confidence:.2f} needed to re-run the orphan check"
+        ),
+    }
+    session.flush()
+    result.not_rechecked += 1
 
 
 def _check_orphans(

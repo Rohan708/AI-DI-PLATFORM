@@ -25,7 +25,7 @@ from ai_data_engineer.graph.models import (
     RelationshipStatus,
 )
 from ai_data_engineer.lab.answer_key import AnswerKey, ExpectedAnomaly
-from ai_data_engineer.lab.schema import ExpectedRelationship
+from ai_data_engineer.lab.schema import BaselineIssue, ExpectedRelationship
 
 
 @dataclass(frozen=True)
@@ -62,6 +62,9 @@ class ScoreReport:
     relationships_found: list[ExpectedRelationship] = field(default_factory=list)
     relationships_missed: list[ExpectedRelationship] = field(default_factory=list)
     relationships_false: list[FoundRelationship] = field(default_factory=list)
+    known_found: list[BaselineIssue] = field(default_factory=list)
+    known_missed: list[BaselineIssue] = field(default_factory=list)
+    known_findings: int = 0  # findings that matched a known baseline issue
 
     @property
     def recall(self) -> float | None:
@@ -99,6 +102,8 @@ class ScoreReport:
             ],
             "relationships_missed": [_rel_text(r) for r in self.relationships_missed],
             "relationships_false": [_rel_text(r) for r in self.relationships_false],
+            "known_baseline_issues_found": len(self.known_found),
+            "known_baseline_issues": len(self.known_found) + len(self.known_missed),
         }
 
     def to_markdown(self) -> str:
@@ -116,6 +121,8 @@ class ScoreReport:
             f"{len(self.relationships_found) + len(self.relationships_missed)} "
             f"({_pct(self.relationship_recall)}) |",
             f"| Wrong relationships proposed | {len(self.relationships_false)} |",
+            f"| Known baseline issues found (real, not planted) | {len(self.known_found)} / "
+            f"{len(self.known_found) + len(self.known_missed)} |",
             "",
             "## By category",
             "",
@@ -153,10 +160,25 @@ class ScoreReport:
         return "\n".join(out) + "\n"
 
 
-def matches(expected: ExpectedAnomaly, finding: FoundFinding) -> bool:
+def matches(expected: ExpectedAnomaly | BaselineIssue, finding: FoundFinding) -> bool:
     if finding.category != expected.category or finding.table != expected.table:
         return False
     return expected.column is None or finding.column is None or finding.column == expected.column
+
+
+def is_knock_on(anomalies: tuple[ExpectedAnomaly, ...], finding: FoundFinding) -> bool:
+    """A finding caused by a planted problem rather than a separate one: on one of its
+    related tables, on the same column (any category; e.g. orphans also make a key's
+    maximum jump), or on the same table in the same category (duplicated customers also
+    duplicate their phone numbers)."""
+    for a in anomalies:
+        if finding.table in a.related_tables:
+            return True
+        if finding.table == a.table and (
+            finding.category == a.category or (a.column is not None and finding.column == a.column)
+        ):
+            return True
+    return False
 
 
 def score(
@@ -167,9 +189,22 @@ def score(
     report = ScoreReport(by_category={category: CategoryScore() for category in FindingCategory})
     matched: set[int] = set()
 
+    # Known baseline issues first: they're column-specific, so a table-level planted
+    # anomaly on the same table doesn't absorb them.
+    for issue in key.baseline_issues:
+        hits = [
+            f
+            for f in findings
+            if id(f) not in matched and f.check_name == issue.check_hint and matches(issue, f)
+        ]
+        (report.known_found if hits else report.known_missed).append(issue)
+        report.known_findings += len(hits)
+        matched.update(id(f) for f in hits)
+    baseline_findings = set(matched)
+
     for anomaly in key.anomalies:
         report.by_category[anomaly.category].expected += 1
-        hits = [f for f in findings if matches(anomaly, f)]
+        hits = [f for f in findings if id(f) not in baseline_findings and matches(anomaly, f)]
         if hits:
             report.by_category[anomaly.category].caught += 1
             report.caught.append((anomaly, hits))
@@ -177,11 +212,10 @@ def score(
         else:
             report.missed.append(anomaly)
 
-    related_tables = {t for anomaly in key.anomalies for t in anomaly.related_tables}
     for finding in findings:
         if id(finding) in matched:
             continue
-        if finding.table in related_tables:
+        if is_knock_on(key.anomalies, finding):
             report.related.append(finding)
         else:
             report.false_alarms.append(finding)

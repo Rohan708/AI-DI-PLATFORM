@@ -30,7 +30,7 @@ Customer DBs (Postgres, MySQL, MSSQL, Snowflake, …) — read-only
 | `lab` | Messy test lab (fake company DB), anomaly injector, answer key, benchmark scorer | 1.2 | No |
 | `ingestion` | Adapter interface + Postgres adapter (read-only introspection, in-DB profiling), scan orchestration, source registry — see [design](design/postgres_adapter.md) | 1.3 | No |
 | `discovery` | Relationship discovery (names, value overlap, query-log joins), orphan / parent-uniqueness checks, auto-documentation — see [design](design/relationship_discovery.md) | 1.4 | No (AI review in Stage 2) |
-| `detection` | Finding recording with dedup/resolve (1.4); deterministic checks + statistics → findings (1.5) | 1.4–1.5 | No |
+| `detection` | Structural, column-value and time-series checks against each column's own history (robust statistics, cold-start safe), finding recording with dedup/resolve — see [design](design/detection.md) | 1.4–1.5 | No |
 | `health_score` | Scores from open findings | 1.6 | No |
 | `alerting` | Routing, dedup, quiet baseline | 1.6 | No |
 | `reasoning` | Rule proposals, explanations, root cause | 2, 6 | **Yes** (confidence + evidence; human-reviewed) |

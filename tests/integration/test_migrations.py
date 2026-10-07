@@ -20,6 +20,7 @@ EXPECTED_TABLES = {
     "relationship_column",
     "rule",
     "finding",
+    "query_join",
 }
 
 

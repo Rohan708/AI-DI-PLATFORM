@@ -167,4 +167,4 @@ Integration tests assert exactly this.
 - Composite links are only found when column names match exactly.
 - Relationships across *different* data sources (source DB ↔ warehouse) come with cross-system checks in Stage 3.
 - Settings are global defaults for now; per-source overrides come later.
-- Query-log evidence needs `pg_stat_statements`, and is **lost when Postgres restarts** until we persist it (Stage 1.5). Without it, integer relationships rely on names alone.
+- Query-log evidence needs `pg_stat_statements`. Since Stage 1.5, joins once seen are remembered in our `query_join` table, so restarts no longer erase them. Without the extension at all, integer relationships rely on names alone.

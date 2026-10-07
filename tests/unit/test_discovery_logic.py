@@ -192,7 +192,6 @@ def test_own_primary_key_never_references_the_same_table() -> None:
     catalog = Catalog(source=DataSource(name="t", kind=SourceKind.POSTGRES))
     catalog.tables[shipments.ref] = shipments
     pairs = {
-        (c.child_columns, c.parent_columns)
-        for c in generate_candidates(catalog, set(), SETTINGS)
+        (c.child_columns, c.parent_columns) for c in generate_candidates(catalog, set(), SETTINGS)
     }
     assert (("shipment_id",), ("ord_id",)) not in pairs

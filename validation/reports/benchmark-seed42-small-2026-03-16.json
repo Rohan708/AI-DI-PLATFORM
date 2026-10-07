@@ -1,22 +1,22 @@
 {
-  "recall": 0.07692307692307693,
-  "precision": 1.0,
+  "recall": 0.8461538461538461,
+  "precision": 0.9285714285714286,
   "relationship_recall": 1.0,
   "relationship_precision": 1.0,
   "by_category": {
     "structural": {
       "expected": 3,
-      "caught": 0,
+      "caught": 3,
       "false_alarms": 0
     },
     "relational": {
       "expected": 2,
-      "caught": 1,
+      "caught": 2,
       "false_alarms": 0
     },
     "column_value": {
       "expected": 3,
-      "caught": 0,
+      "caught": 3,
       "false_alarms": 0
     },
     "business_rule": {
@@ -26,8 +26,8 @@
     },
     "time_series": {
       "expected": 3,
-      "caught": 0,
-      "false_alarms": 0
+      "caught": 3,
+      "false_alarms": 1
     },
     "row_outlier": {
       "expected": 0,
@@ -51,20 +51,14 @@
     }
   },
   "missed": [
-    "drop_column:shop.products.weight_grams",
-    "widen_column_type:shop.orders.channel",
-    "drop_primary_key:legacy.INV_LINE",
-    "duplicate_customers:shop.customers.email",
-    "null_spike:shop.addresses.postal_code",
-    "country_variants:shop.addresses.country",
-    "negative_quantity:shop.order_items.quantity",
-    "skipped_load:reporting.daily_sales",
-    "skipped_load:reporting.customer_summary",
-    "half_load:shop.orders",
     "ship_before_order:shop.shipments.shipped_at",
     "invoice_total_mismatch:legacy.INV_HDR.TOTAL_AMT"
   ],
-  "false_alarms": [],
+  "false_alarms": [
+    "volume_drop:shop.shipments"
+  ],
   "relationships_missed": [],
-  "relationships_false": []
+  "relationships_false": [],
+  "known_baseline_issues_found": 13,
+  "known_baseline_issues": 13
 }

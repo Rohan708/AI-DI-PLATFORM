@@ -21,9 +21,7 @@ ColumnRef = tuple[str, str, str]  # (schema, table, column); schema may be "" if
 
 # Only statements that can contain a join condition are parsed (SHOW, SET, CREATE ... are
 # skipped), and sqlglot's "falling back to Command" warnings are kept out of the output.
-_MAY_JOIN = re.compile(
-    r"^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*=", re.IGNORECASE | re.DOTALL
-)
+_MAY_JOIN = re.compile(r"^\s*(SELECT|WITH|INSERT|UPDATE|DELETE)\b.*=", re.IGNORECASE | re.DOTALL)
 logging.getLogger("sqlglot").setLevel(logging.ERROR)
 
 

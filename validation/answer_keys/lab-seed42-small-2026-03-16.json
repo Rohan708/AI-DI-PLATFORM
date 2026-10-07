@@ -396,5 +396,98 @@
     "legacy CHAR columns are space-padded (CUST_NM, CUSTID, STAT_CD)",
     "order volume is ~40% lower on weekends (seasonality)",
     "shop.orders.status mix shifts daily as orders move placed -> shipped -> delivered"
+  ],
+  "baseline_issues": [
+    {
+      "category": "structural",
+      "table": "legacy.INV_LINE_TAX",
+      "column": null,
+      "check_hint": "missing_primary_key",
+      "description": "legacy tax lines have never had a primary key"
+    },
+    {
+      "category": "structural",
+      "table": "shop.categories",
+      "column": "parent_id",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.categories(parent_id) references shop.categories without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.products",
+      "column": "category_id",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.products(category_id) references shop.categories without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.addresses",
+      "column": "customer_id",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.addresses(customer_id) references shop.customers without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.orders",
+      "column": "cust_no",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.orders(cust_no) references shop.customers without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.orders",
+      "column": "ship_addr",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.orders(ship_addr) references shop.addresses without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.order_items",
+      "column": "product_id",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.order_items(product_id) references shop.products without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.payments",
+      "column": "order_ref",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.payments(order_ref) references shop.orders without an index"
+    },
+    {
+      "category": "structural",
+      "table": "shop.shipments",
+      "column": "ord_id",
+      "check_hint": "unindexed_foreign_key",
+      "description": "shop.shipments(ord_id) references shop.orders without an index"
+    },
+    {
+      "category": "structural",
+      "table": "legacy.CUST_MASTER",
+      "column": "EXT_REF",
+      "check_hint": "unindexed_foreign_key",
+      "description": "legacy.CUST_MASTER(EXT_REF) references shop.customers without an index"
+    },
+    {
+      "category": "structural",
+      "table": "legacy.INV_HDR",
+      "column": "CUSTID",
+      "check_hint": "unindexed_foreign_key",
+      "description": "legacy.INV_HDR(CUSTID) references legacy.CUST_MASTER without an index"
+    },
+    {
+      "category": "structural",
+      "table": "legacy.INV_LINE",
+      "column": "ITEM_CD",
+      "check_hint": "unindexed_foreign_key",
+      "description": "legacy.INV_LINE(ITEM_CD) references shop.products without an index"
+    },
+    {
+      "category": "structural",
+      "table": "legacy.INV_LINE_TAX",
+      "column": null,
+      "check_hint": "unindexed_foreign_key",
+      "description": "legacy.INV_LINE_TAX(INV_NO, LINE_NO) references legacy.INV_LINE without an index"
+    }
   ]
 }

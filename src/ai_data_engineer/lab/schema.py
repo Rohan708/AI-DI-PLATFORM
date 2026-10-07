@@ -14,6 +14,8 @@ from dataclasses import dataclass
 from sqlalchemy import Connection, text
 from sqlalchemy.exc import DBAPIError
 
+from ai_data_engineer.graph.models import FindingCategory
+
 SHOP, LEGACY, REPORTING, LAB_ADMIN = "shop", "legacy", "reporting", "aide_lab"
 # ``aide_lab`` holds the lab's own bookkeeping; scanners must exclude it.
 LAB_SCHEMAS = (SHOP, LEGACY, REPORTING, LAB_ADMIN)
@@ -210,6 +212,47 @@ NORMAL_PATTERNS: tuple[str, ...] = (
     "legacy CHAR columns are space-padded (CUST_NM, CUSTID, STAT_CD)",
     "order volume is ~40% lower on weekends (seasonality)",
     "shop.orders.status mix shifts daily as orders move placed -> shipped -> delivered",
+)
+
+
+@dataclass(frozen=True)
+class BaselineIssue:
+    """A real problem ShopCo has from day one (not planted). Finding it is correct; the
+    scorer reports these separately instead of counting them as false alarms."""
+
+    category: FindingCategory
+    table: str
+    column: str | None
+    check_hint: str
+    description: str
+
+
+# Relationship child columns that happen to be indexed (the leading part of a key).
+_INDEXED_CHILD_COLUMNS = {
+    ("shop.order_items", ("order_id",)),
+    ("reporting.customer_summary", ("customer_id",)),
+    ("legacy.INV_LINE", ("INV_NO",)),
+}
+
+BASELINE_ISSUES: tuple[BaselineIssue, ...] = (
+    BaselineIssue(
+        FindingCategory.STRUCTURAL,
+        "legacy.INV_LINE_TAX",
+        None,
+        "missing_primary_key",
+        "legacy tax lines have never had a primary key",
+    ),
+    *(
+        BaselineIssue(
+            FindingCategory.STRUCTURAL,
+            r.from_table,
+            r.from_columns[0] if len(r.from_columns) == 1 else None,
+            "unindexed_foreign_key",
+            f"{r.from_table}({', '.join(r.from_columns)}) references {r.to_table} without an index",
+        )
+        for r in TRUE_RELATIONSHIPS
+        if (r.from_table, r.from_columns) not in _INDEXED_CHILD_COLUMNS
+    ),
 )
 
 

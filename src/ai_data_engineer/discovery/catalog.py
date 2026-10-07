@@ -63,6 +63,8 @@ class TableInfo:
     historical_keys: tuple[tuple[str, ...], ...]  # PKs that existed in earlier versions
     foreign_keys: tuple[dict[str, Any], ...]
     estimated_rows: int | None = None
+    indexes: tuple[dict[str, Any], ...] = ()
+    kind: str = "table"
 
     @property
     def ref(self) -> str:
@@ -123,6 +125,8 @@ def load_catalog(session: Session, source: DataSource) -> Catalog:
             ),
             foreign_keys=tuple(current.foreign_keys),
             estimated_rows=latest[0].row_count if latest else None,
+            indexes=tuple(current.indexes),
+            kind=asset.kind.value,
         )
         catalog.tables[table.ref] = table
     return catalog

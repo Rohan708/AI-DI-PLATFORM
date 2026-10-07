@@ -202,6 +202,6 @@ The single output table for every detector.
 | Job / ETL-run tracking, query logs | Stage 1.4+ (when we read `pg_stat_statements` / query history) |
 | Owners, alert channels, health-score snapshots | Stage 1.6 |
 | Finding feedback history / audit log | Stage 4 |
-| Stored query-log history (joins are kept only as relationship evidence for now) | Stage 6 (root cause) |
+| Full query-log history (only joined column pairs are remembered, in `query_join` since 1.5) | Stage 6 (root cause) |
 | Postgres row-level security per tenant | Stage 4 |
 | Rename detection policy | Stage 1.3 |

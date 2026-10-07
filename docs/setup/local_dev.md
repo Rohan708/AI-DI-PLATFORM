@@ -42,6 +42,8 @@ aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas 
 aide lab run standard --size small --scan shopco
 aide source show shopco
 aide discover shopco
+aide detect shopco
+aide findings shopco
 aide lab score --data-source shopco
 aide docs shopco
 ```

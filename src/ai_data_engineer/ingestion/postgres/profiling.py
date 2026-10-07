@@ -99,6 +99,8 @@ def _column_expressions(i: int, column: ColumnObservation, settings: ScanSetting
         exprs.append(f"stddev_samp({col})::float8 AS c{i}_stddev")
     if family is TypeFamily.STRING:
         exprs.append(f"avg(length({col}))::float8 AS c{i}_avg_length")
+        # Same value up to letter case ("ANNA@X.COM" vs "anna@x.com") = likely duplicates.
+        exprs.append(f"count(DISTINCT lower({col})) AS c{i}_distinct_ci")
     return exprs
 
 
@@ -134,6 +136,7 @@ def run_profile(
                 stddev=row.get(f"c{i}_stddev"),
                 avg_length=row.get(f"c{i}_avg_length"),
                 top_values=top_values,
+                distinct_case_insensitive=row.get(f"c{i}_distinct_ci"),
             )
         )
     return plan, measured_rows, measurements

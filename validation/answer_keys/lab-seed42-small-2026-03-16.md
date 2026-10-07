@@ -40,6 +40,26 @@ Simulated through **2026-03-16**. Written by the lab *before* detection runs; th
 | `legacy.INV_LINE_TAX(INV_NO, LINE_NO)` | `legacy.INV_LINE(INV_NO, LINE_NO)` | **no** | composite key |
 | `reporting.customer_summary(customer_id)` | `shop.customers(id)` | **no** |  |
 
+## Known baseline issues (13): real from day one, not planted
+
+Finding these is correct; the scorer reports them separately.
+
+| Category | Where | Expected check | What |
+|---|---|---|---|
+| structural | `legacy.INV_LINE_TAX` | missing_primary_key | legacy tax lines have never had a primary key |
+| structural | `shop.categories.parent_id` | unindexed_foreign_key | shop.categories(parent_id) references shop.categories without an index |
+| structural | `shop.products.category_id` | unindexed_foreign_key | shop.products(category_id) references shop.categories without an index |
+| structural | `shop.addresses.customer_id` | unindexed_foreign_key | shop.addresses(customer_id) references shop.customers without an index |
+| structural | `shop.orders.cust_no` | unindexed_foreign_key | shop.orders(cust_no) references shop.customers without an index |
+| structural | `shop.orders.ship_addr` | unindexed_foreign_key | shop.orders(ship_addr) references shop.addresses without an index |
+| structural | `shop.order_items.product_id` | unindexed_foreign_key | shop.order_items(product_id) references shop.products without an index |
+| structural | `shop.payments.order_ref` | unindexed_foreign_key | shop.payments(order_ref) references shop.orders without an index |
+| structural | `shop.shipments.ord_id` | unindexed_foreign_key | shop.shipments(ord_id) references shop.orders without an index |
+| structural | `legacy.CUST_MASTER.EXT_REF` | unindexed_foreign_key | legacy.CUST_MASTER(EXT_REF) references shop.customers without an index |
+| structural | `legacy.INV_HDR.CUSTID` | unindexed_foreign_key | legacy.INV_HDR(CUSTID) references legacy.CUST_MASTER without an index |
+| structural | `legacy.INV_LINE.ITEM_CD` | unindexed_foreign_key | legacy.INV_LINE(ITEM_CD) references shop.products without an index |
+| structural | `legacy.INV_LINE_TAX` | unindexed_foreign_key | legacy.INV_LINE_TAX(INV_NO, LINE_NO) references legacy.INV_LINE without an index |
+
 ## Normal patterns (must NOT be flagged)
 
 - shop.customers.middle_name is ~60% NULL (most people have none)

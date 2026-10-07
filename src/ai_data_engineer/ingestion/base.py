@@ -47,6 +47,7 @@ class ColumnMeasurement:
     stddev: float | None = None
     avg_length: float | None = None
     top_values: list[dict[str, Any]] | None = None
+    distinct_case_insensitive: int | None = None  # text columns only
 
     @property
     def null_rate(self) -> float | None:

@@ -1,6 +1,6 @@
 # AI Data Engineer: Vision, Design & Roadmap
 
-*Version 1, 2026-10-04. Detailed designs: [metadata store](../design/metadata_store.md) (1.1), [test lab](../design/test_lab.md) (1.2), [Postgres adapter](../design/postgres_adapter.md) (1.3), [relationship discovery](../design/relationship_discovery.md) (1.4). Written after the scope change from "Snowflake + dbt monitor" to "database-agnostic anomaly engine". This is the reference for **what** we build and **why**. [`CLAUDE.md`](../../CLAUDE.md) tracks **where we are**.*
+*Version 1, 2026-10-04. Detailed designs: [metadata store](../design/metadata_store.md) (1.1), [test lab](../design/test_lab.md) (1.2), [Postgres adapter](../design/postgres_adapter.md) (1.3), [relationship discovery](../design/relationship_discovery.md) (1.4), [detection](../design/detection.md) (1.5). Written after the scope change from "Snowflake + dbt monitor" to "database-agnostic anomaly engine". This is the reference for **what** we build and **why**. [`CLAUDE.md`](../../CLAUDE.md) tracks **where we are**.*
 
 ---
 

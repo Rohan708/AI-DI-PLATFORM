@@ -161,6 +161,7 @@ Until detection exists (Stage 1.5), the score is 0 caught, which is expected.
 aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
 aide lab run standard --size small --scan shopco   # build, nightly scans, plant, scan
 aide discover shopco                               # relationships + orphan checks
+aide detect shopco                                 # structural, value, time-series checks
 aide lab score --data-source shopco                # caught / missed / false alarms
 aide docs shopco                                   # generated data dictionary + map
 ```

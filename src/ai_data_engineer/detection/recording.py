@@ -72,7 +72,7 @@ def record_finding(
         existing.severity = severity
         existing.title = title
         existing.description = description
-        existing.evidence = evidence
+        existing.evidence = evidence  # replaces any earlier "not re-checked" marker
         existing.confidence = confidence
         session.flush()
         return existing, False

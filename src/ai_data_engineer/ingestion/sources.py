@@ -15,6 +15,10 @@ class SourceNotFoundError(LookupError):
     pass
 
 
+class SourceExistsError(ValueError):
+    pass
+
+
 def default_tenant(session: Session) -> Tenant:
     tenant = session.scalar(select(Tenant).where(Tenant.name == DEFAULT_TENANT_NAME))
     if tenant is None:
@@ -34,8 +38,13 @@ def add_source(
 ) -> DataSource:
     """Register a database. ``settings`` are validated now, so mistakes fail early."""
     validated = ScanSettings.model_validate(settings or {})
+    tenant = default_tenant(session)
+    if session.scalar(
+        select(DataSource.id).where(DataSource.tenant_id == tenant.id, DataSource.name == name)
+    ):
+        raise SourceExistsError(f"a data source named {name!r} already exists")
     source = DataSource(
-        tenant_id=default_tenant(session).id,
+        tenant_id=tenant.id,
         name=name,
         kind=kind,
         connection_ref=connection_ref,

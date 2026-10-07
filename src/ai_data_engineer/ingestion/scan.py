@@ -207,6 +207,11 @@ def _store_profile(
                 avg_length=column.avg_length,
                 sample_fraction=measurement.sample_fraction,
                 top_values=column.top_values,
+                extra=(
+                    {"distinct_case_insensitive": column.distinct_case_insensitive}
+                    if column.distinct_case_insensitive is not None
+                    else {}
+                ),
             )
         )
 
