@@ -1,6 +1,6 @@
 # AI Data Engineer — project guide for Claude
 
-**Current stage:** Stage 1.4 — benchmark met on the real lab run (2026-10-05): **15/15 relationships, 1 wrong (fixed since), `orphan_orders` caught, 0 false alarms**. 163/163 tests pass incl. all integration (2026-10-07); ruff/mypy follow-ups fixed. Waiting on: `ruff check` + `mypy` clean, and the `discover shopco` re-run showing 0 wrong relationships → then 1.4 ✅ and Stage 1.5 (plan already proposed, awaiting approval). Stage 1.3 ✅ (manual real-scan check passed 2026-10-05). Stages 1.1, 1.2 ✅. Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md).
+**Current stage:** Stage 1.5 — detection: planning (plan proposed, awaiting approval). Stage 1.4 ✅ done 2026-10-07: 163/163 tests (all integration), mypy clean; real lab: **15/15 relationships, 0 wrong, `orphan_orders` caught, 0 false alarms**. Stages 1.1–1.3 ✅. Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md).
 
 **Environment:** Python 3.12 (conda env `py312`). Docker Desktop installed (2026-10-04). Git remote to be connected later.
 **Collaboration:** Claude proposes plans and writes code only after approval; the user runs installs/tests and Claude gives exact commands.
@@ -73,7 +73,7 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - 1.1 ✅ Metadata store schema v2 + Alembic: data sources, asset/column identity + versions, profile time series, relationships (declared/inferred, with confidence), rules, ingestion runs, findings. Done when: migrations up/down clean, constraint + graph-traversal tests pass.
 - 1.2 ✅ **Messy test lab + benchmark:** a seeded generator for a realistic OLTP database (e-commerce/billing) with undeclared/misnamed FKs, legacy naming, composite keys, a nightly "ETL" simulator, an anomaly injector with a written answer key, and a **scorer** (caught / missed / false alarms per category). Done when: one command builds it reproducibly in Docker and the scorer runs.
 - 1.3 ✅ Postgres adapter: introspection + safe in-DB profiling (read-only txn, timeouts, sampling, `pg_stats` where cheap). Done when: metadata store matches the lab DB by manual comparison.
-- 1.4 Relationship discovery: declared FKs, name similarity, value inclusion, query-log joins (`pg_stat_statements`), then orphan + cardinality checks + **auto-documentation** (data dictionary + relationship map, Markdown/Mermaid). Done when: discovers the lab's hidden FKs with ≥ the answer key's expected recall; false positives explainable.
+- 1.4 ✅ Relationship discovery: declared FKs, name similarity, value inclusion, query-log joins (`pg_stat_statements`), then orphan + cardinality checks + **auto-documentation** (data dictionary + relationship map, Markdown/Mermaid). Done when: discovers the lab's hidden FKs with ≥ the answer key's expected recall; false positives explainable.
 - 1.5 Detection: structural, column-value, time-series (volume, freshness, null rate, distinct/duplicates), cold-start safe. Done when: all injected anomalies caught; false positives explainable.
 - 1.6 Findings lifecycle (dedup, status), health score, alerts + quiet-baseline mode. Done when: one command profiles, detects, scores, and alerts sensibly.
 
@@ -108,6 +108,8 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - Views are described but not profiled (cost); revisit with per-source opt-in.
 - Discovery settings are global defaults (`discovery/settings.py`); add per-source overrides. Composite links only found with identical column names.
 - Orphan checks run on proposed relationships only at confidence >= 0.9; without `pg_stat_statements`, integer links rarely reach that (no query-log signal) — document for customers.
+- **Query-log evidence is transient:** `pg_stat_statements` resets when Postgres restarts (seen 2026-10-07: 167 → 12 statements; `cust_no → customers` confidence 0.91 → 0.66). Persist join evidence in the metadata store so it accumulates (planned as the first item of 1.5).
+- **Stale findings:** if a relationship's confidence drops below the orphan-check threshold, its open orphan finding is neither refreshed nor resolved. Mark such findings "not re-checked" (1.5/1.6).
 - Findings lifecycle is minimal (dedup + resolve in `detection/recording.py`); alerts/reopen/quiet-baseline in 1.6.
 - Freshness on Postgres has no native "last modified"; 1.5 must derive it from timestamp-column maxima + `pg_stat_user_tables` counters stored in `asset_profile.properties.pg_stat`.
 - Migrations live in `src/ai_data_engineer/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).

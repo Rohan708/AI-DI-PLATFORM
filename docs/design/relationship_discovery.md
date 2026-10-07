@@ -161,8 +161,10 @@ Integration tests assert exactly this.
 |---|---|---|---|---|
 | 2026-10-05 | lab `standard`, size `small`, seed 42, 15 nightly scans | **15 / 15** | 1 | `orphan_orders` caught, 0 false alarms. Wrong one: `shipments.shipment_id → shipments.ord_id` (0.63): a table's own PK matched another unique column of the same table. **Fixed:** a table's own primary key is never treated as a reference to the same table. |
 
+| 2026-10-07 | same lab, re-discovery after a laptop restart | **15 / 15** | **0** | Wrong link retired automatically. Postgres restart wiped `pg_stat_statements` (167 → 12 statements), so query-log-backed confidences fell (e.g. `cust_no` 0.91 → 0.66) and the orphan check didn't re-run. Fix planned: persist join evidence (Stage 1.5). |
+
 ## 10. Known limitations
 - Composite links are only found when column names match exactly.
 - Relationships across *different* data sources (source DB ↔ warehouse) come with cross-system checks in Stage 3.
 - Settings are global defaults for now; per-source overrides come later.
-- Query-log evidence needs `pg_stat_statements`. Without it, integer relationships rely on names alone.
+- Query-log evidence needs `pg_stat_statements`, and is **lost when Postgres restarts** until we persist it (Stage 1.5). Without it, integer relationships rely on names alone.
