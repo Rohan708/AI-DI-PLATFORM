@@ -58,7 +58,7 @@ def join_counts(stats: Iterable[QueryStat]) -> Counter[frozenset[ColumnRef]]:
     """Total calls per joined column pair (order-insensitive)."""
     counts: Counter[frozenset[ColumnRef]] = Counter()
     for stat in stats:
-        for a, b in join_pairs(stat.query):
+        for a, b in join_pairs(stat.query, dialect=stat.dialect):
             counts[frozenset((a, b))] += stat.calls
     return counts
 
@@ -78,8 +78,9 @@ def _ident(node: exp.Expression | None) -> str:
     if node is None:
         return ""
     if isinstance(node, exp.Identifier):
-        return node.name if node.quoted else node.name.lower()
-    return node.name
+        name = str(node.name)
+        return name if node.quoted else name.lower()
+    return str(node.name)
 
 
 def _alias_key(name: str) -> str:

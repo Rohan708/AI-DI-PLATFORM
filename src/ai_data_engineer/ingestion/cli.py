@@ -11,7 +11,12 @@ from ai_data_engineer.config import get_settings
 from ai_data_engineer.db import create_db_engine
 from ai_data_engineer.graph.models import RunStatus, SourceKind
 from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.sources import add_source, get_source, list_sources
+from ai_data_engineer.ingestion.sources import (
+    add_source,
+    get_source,
+    list_sources,
+    remove_source,
+)
 from ai_data_engineer.ingestion.summary import render_source_summary
 
 
@@ -38,9 +43,26 @@ def add_ingestion_parsers(
         help="never store actual values (top values, text min/max)",
     )
 
+    p.add_argument(
+        "--alert-webhook-ref",
+        help="NAME of the env var (or .env entry) holding a Slack webhook URL",
+    )
+
     commands.add_parser("list", help="list registered databases")
     p = commands.add_parser("show", help="what we know about a database (latest scan)")
     p.add_argument("name")
+
+    p = commands.add_parser("alerts", help="where a source's alerts go")
+    p.add_argument("name")
+    target = p.add_mutually_exclusive_group(required=True)
+    target.add_argument("--webhook-ref", help="env var holding a Slack webhook URL")
+    target.add_argument("--console", action="store_true", help="print alerts instead")
+
+    p = commands.add_parser(
+        "remove", help="delete everything recorded about a source (not the database itself)"
+    )
+    p.add_argument("name")
+    p.add_argument("--yes", action="store_true", help="confirm the deletion")
 
     scan = subcommands.add_parser("scan", help="scan a registered database now")
     scan.add_argument("name")
@@ -66,12 +88,28 @@ def run_source_command(args: argparse.Namespace) -> int:
                 connection_ref=args.connection_ref,
                 settings=settings,
             )
+            source.alert_webhook_ref = args.alert_webhook_ref
             print(f"registered {source.name} ({source.kind.value}) settings={source.settings}")
         elif args.source_command == "list":
             for source in list_sources(session):
-                print(f"{source.name:20} {source.kind.value:10} ref={source.connection_ref}")
+                alerts = source.alert_webhook_ref or "console"
+                print(
+                    f"{source.name:20} {source.kind.value:10} ref={source.connection_ref} "
+                    f"alerts={alerts}"
+                )
         elif args.source_command == "show":
             print(render_source_summary(session, get_source(session, args.name)))
+        elif args.source_command == "alerts":
+            source = get_source(session, args.name)
+            source.alert_webhook_ref = None if args.console else args.webhook_ref
+            print(f"{source.name}: alerts go to {source.alert_webhook_ref or 'the console'}")
+        elif args.source_command == "remove":
+            source = get_source(session, args.name)
+            if not args.yes:
+                print(f"would delete all history of {source.name!r}; re-run with --yes")
+                return 1
+            counts = remove_source(session, source)
+            print(f"removed {args.name}: {sum(counts.values()):,} rows deleted")
     return 0
 
 
@@ -87,11 +125,17 @@ def run_scan_command(args: argparse.Namespace) -> int:
 
 @contextmanager
 def store_session() -> Iterator[Session]:
-    """A metadata-store session that commits on success."""
+    """A metadata-store session that commits at the end (callers like ``aide run`` may
+    also commit in between) and rolls back on error."""
     engine = create_db_engine(get_settings().database_url.get_secret_value())
     try:
-        with Session(engine) as session, session.begin():
-            yield session
+        with Session(engine) as session:
+            try:
+                yield session
+                session.commit()
+            except BaseException:
+                session.rollback()
+                raise
     finally:
         engine.dispose()
 

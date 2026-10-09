@@ -21,10 +21,16 @@ dependencies = [
 [project.optional-dependencies]
 # Fake-data generation for the test lab / demo database.
 lab = ["faker>=30"]
+# Database drivers for the generic SQL adapter (Stage 3). Install only what you use.
+mysql = ["pymysql>=1.1"]
+sqlserver = ["pyodbc>=5.1"]  # also needs Microsoft's "ODBC Driver 18 for SQL Server"
+oracle = ["oracledb>=2.0"]
+snowflake = ["snowflake-sqlalchemy>=1.6"]
 dev = [
     "faker>=30",
+    "pymysql>=1.1",
     "pytest>=8.2",
-    "testcontainers[postgres]>=4.15",
+    "testcontainers[postgres,mysql]>=4.15",
     "ruff>=0.6",
     "mypy>=1.11",
     "pre-commit>=3.7",
@@ -83,6 +89,11 @@ plugins = ["pydantic.mypy"]
 [[tool.mypy.overrides]]
 module = ["testcontainers.*", "faker.*", "sqlglot.*"]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# Builds SQLAlchemy dialects and dialect types directly; their constructors are untyped.
+module = ["test_sql_dialect_logic"]
+disallow_untyped_calls = false
 
 # ---------------------------------------------------------------------------
 # pytest

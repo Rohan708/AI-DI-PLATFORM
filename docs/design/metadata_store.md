@@ -200,7 +200,15 @@ The single output table for every detector.
 | Missing | Comes in |
 |---|---|
 | Job / ETL-run tracking, query logs | Stage 1.4+ (when we read `pg_stat_statements` / query history) |
-| Owners, alert channels, health-score snapshots | Stage 1.6 |
+| Owners (per-person alert routing) | Stage 4 |
+
+## 7. Added later
+| Table / column | Stage | Purpose |
+|---|---|---|
+| `query_join` | 1.5 (migration 0002) | remembered query-log joins (survive statistics resets) |
+| `finding_event` | 1.6 (0003) | audit trail of every finding status change |
+| `health_snapshot` | 1.6 (0003) | health score per table/schema/source after each run |
+| `data_source.alert_webhook_ref`, `.baseline_completed_at` | 1.6 (0003) | where alerts go (by reference) and when the quiet baseline ended |
 | Finding feedback history / audit log | Stage 4 |
 | Full query-log history (only joined column pairs are remembered, in `query_join` since 1.5) | Stage 6 (root cause) |
 | Postgres row-level security per tenant | Stage 4 |

@@ -29,6 +29,8 @@ SHIP_BEFORE_ORDER_FRACTION = 0.01
 INVOICE_MISMATCH_FRACTION = 0.01
 INVOICE_MISMATCH_FACTOR = 1.1
 HALF_LOAD_VOLUME_FACTOR = 0.4
+FAT_FINGER_ROWS = 3  # order lines whose quantity was typed with extra zeros
+FAT_FINGER_QUANTITY = 500  # normal quantities are 1-3
 
 Apply = Callable[[Connection, LabState], list[ExpectedAnomaly]]
 
@@ -355,5 +357,28 @@ def invoice_total_mismatch(conn: Connection, state: LabState) -> list[ExpectedAn
             f"{affected} invoice totals inflated by 10% versus the sum of their lines",
             {"rows": affected, "factor": INVOICE_MISMATCH_FACTOR},
             related=("legacy.INV_LINE",),
+        )
+    ]  # fmt: skip
+
+
+# --- row-level outliers (Stage 2.5) ------------------------------------------------------
+
+
+@_scenario("fat_finger_quantity", FindingCategory.ROW_OUTLIER, "A few absurd order quantities")
+def fat_finger_quantity(conn: Connection, state: LabState) -> list[ExpectedAnomaly]:
+    affected = conn.execute(
+        text(
+            "UPDATE shop.order_items SET quantity = :quantity WHERE (order_id, line_no) IN ("
+            "SELECT order_id, line_no FROM shop.order_items WHERE quantity > 0 "
+            "ORDER BY md5('fat' || order_id::text || '-' || line_no::text || :salt) LIMIT :n)"
+        ),
+        {"quantity": FAT_FINGER_QUANTITY, "salt": str(state.seed), "n": FAT_FINGER_ROWS},
+    ).rowcount
+    return [
+        _expect(
+            state, "fat_finger_quantity", FindingCategory.ROW_OUTLIER, "shop.order_items",
+            "quantity", "row_outlier", "2",
+            f"{affected} order lines got quantity {FAT_FINGER_QUANTITY} (normally 1-3)",
+            {"rows": affected, "quantity": FAT_FINGER_QUANTITY},
         )
     ]  # fmt: skip

@@ -26,6 +26,9 @@ from ai_data_engineer.graph.models import (
     relationship_signature,
 )
 
+# Evidence written by others than discovery, kept when discovery refreshes the rest.
+KEPT_EVIDENCE_KEYS = ("ai_review",)
+
 
 @dataclass(frozen=True)
 class Proposal:
@@ -90,7 +93,10 @@ def sync_relationships(
             session.add(rel)
             result.created.append(rel)
             continue
-        current.evidence = proposal.evidence
+        # Fresh measurements replace the old ones; an AI opinion stays (it records which
+        # evidence it saw, so a reviewer can tell when it's stale).
+        kept = {k: current.evidence[k] for k in KEPT_EVIDENCE_KEYS if k in current.evidence}
+        current.evidence = {**proposal.evidence, **kept}
         current.signals = list(proposal.signals)
         if current.kind is RelationshipKind.INFERRED and not is_reviewed(current):
             current.confidence = proposal.confidence

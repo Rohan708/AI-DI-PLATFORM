@@ -57,9 +57,25 @@ class DetectionContext:
         return len(history) >= self.settings.min_history_scans
 
     def _split[P: (AssetProfile, ColumnProfile)](self, series: list[P]) -> tuple[list[P], P | None]:
+        series = daily(series, self.settings.time_series_min_gap_hours)
         if series and series[-1].ingestion_run_id == self.current_run_id:
             return series[:-1][-self.settings.baseline_scans :], series[-1]
         return series[-self.settings.baseline_scans :], None
+
+
+def daily[P: (AssetProfile, ColumnProfile)](profiles: list[P], min_gap_hours: float) -> list[P]:
+    """One scan per day: when two scans are closer than ``min_gap_hours``, keep the later.
+
+    Every check sees this thinned history, so a second run on the same day re-judges that
+    day (instead of seeing "0 new rows", or treating today's anomaly as part of "normal").
+    """
+    gap = timedelta(hours=min_gap_hours)
+    kept: list[P] = []
+    for profile in profiles:
+        while kept and profile.measured_at - kept[-1].measured_at < gap:
+            kept.pop()
+        kept.append(profile)
+    return kept
 
 
 def fingerprint(check: str, *subject: object) -> str:

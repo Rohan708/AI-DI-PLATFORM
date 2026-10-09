@@ -38,6 +38,11 @@ class DataSource(TenantScoped, Base):
     settings: Mapped[dict[str, Any]] = mapped_column(default=dict)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
     disabled_at: Mapped[datetime | None]
+    # Name of the env var / .env entry holding the Slack webhook URL (never the URL itself).
+    alert_webhook_ref: Mapped[str | None] = mapped_column(String(500))
+    # Set by the first alerting run ("quiet baseline"): findings that existed before this
+    # moment were recorded but never alerted.
+    baseline_completed_at: Mapped[datetime | None]
 
     __table_args__ = (UniqueConstraint("tenant_id", "name", name="uq_data_source_tenant_name"),)
 

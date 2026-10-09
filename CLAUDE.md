@@ -1,6 +1,6 @@
 # AI Data Engineer — project guide for Claude
 
-**Current stage:** Stage 1.5 — detection: benchmark met on the real lab run (2026-10-07): **11/11 Stage-1 anomalies caught, 1 false alarm (fixed since), 13/13 known baseline issues, 15/15 relationships**. 180/180 tests. Waiting on: `ruff check` + `pytest` (182) with the follow-ups (weekday baseline fix, one-line CLI errors), and `detect shopco2` re-run showing the shipments alarm resolved → then 1.5 ✅ and Stage 1.6 planning. Stages 1.1–1.4 ✅. Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md), [`detection`](docs/design/detection.md).
+**Current stage:** Stage 3 — generic SQL adapter (MySQL, SQL Server, Oracle, Snowflake; SQLAlchemy Core + per-database profiles), cross-system reconciliation (`aide reconcile`), Postgres database health (`aide dbhealth`). **Code written 2026-10-10; ruff + mypy clean 2026-10-11; Stage 3 tests not yet run.** **Next session starts here:** `pip install -e ".[dev]"` → `alembic upgrade head` → `pytest tests/unit/test_sql_dialect_logic.py tests/unit/test_reconcile_logic.py` → `pytest tests/integration/test_reconcile_and_dbhealth.py tests/integration/test_sql_adapter.py` (MySQL container) → fix failures → Snowflake manual smoke run → then Stage 4 plan. Stages 1–2 ✅ 2026-10-11: 245 tests pass; lab `--pipeline` (shopco4) 0 false alarms, 12/14 (2 rule scenarios need approved rules: 13/13 on shopco3 with Gemini rules, AI recall 12/13). Pending: Gemini run of `relationships review` + `explain`. Plain-language overview: [`docs/guide/how_it_works.md`](docs/guide/how_it_works.md). Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md), [`detection`](docs/design/detection.md), [`lifecycle_health_alerts`](docs/design/lifecycle_health_alerts.md), [`ai_rules`](docs/design/ai_rules.md), [`ai_assist`](docs/design/ai_assist.md), [`row_outliers`](docs/design/row_outliers.md), [`stage3_databases`](docs/design/stage3_databases.md); DB setup: [`databases`](docs/setup/databases.md).
 
 **Environment:** Python 3.12 (conda env `py312`). Docker Desktop installed (2026-10-04). Git remote to be connected later.
 **Collaboration:** Claude proposes plans and writes code only after approval; the user runs installs/tests and Claude gives exact commands.
@@ -59,7 +59,7 @@ Pitch: point it at any database, however messy, and it tells you what's wrong, w
 ## Tech stack
 Python 3.12 · PostgreSQL (metadata store + first target) · SQLAlchemy 2.x · Alembic · pydantic-settings · pytest + testcontainers · ruff · mypy (strict) · pre-commit · pip + `pyproject.toml` · Makefile · GitHub Actions · sqlglot · (later) scikit-learn for outliers, an LLM API under the `reasoning` extra, FastAPI.
 
-Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests/unit` (no Docker) and `tests/integration` (testcontainers).
+Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests/unit` (no Docker) and `tests/integration` (testcontainers). **Test file names must be unique across both folders** (mypy treats them as top-level modules): unit files use a `_logic` suffix, e.g. `test_detection_logic.py` vs `integration/test_detection.py`.
 
 ## Working process
 - One step at a time. Every step has a **"done when"** and ends with passing tests before the next starts.
@@ -74,12 +74,12 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - 1.2 ✅ **Messy test lab + benchmark:** a seeded generator for a realistic OLTP database (e-commerce/billing) with undeclared/misnamed FKs, legacy naming, composite keys, a nightly "ETL" simulator, an anomaly injector with a written answer key, and a **scorer** (caught / missed / false alarms per category). Done when: one command builds it reproducibly in Docker and the scorer runs.
 - 1.3 ✅ Postgres adapter: introspection + safe in-DB profiling (read-only txn, timeouts, sampling, `pg_stats` where cheap). Done when: metadata store matches the lab DB by manual comparison.
 - 1.4 ✅ Relationship discovery: declared FKs, name similarity, value inclusion, query-log joins (`pg_stat_statements`), then orphan + cardinality checks + **auto-documentation** (data dictionary + relationship map, Markdown/Mermaid). Done when: discovers the lab's hidden FKs with ≥ the answer key's expected recall; false positives explainable.
-- 1.5 Detection: structural, column-value, time-series (volume, freshness, null rate, distinct/duplicates), cold-start safe. Done when: all injected anomalies caught; false positives explainable.
-- 1.6 Findings lifecycle (dedup, status), health score, alerts + quiet-baseline mode. Done when: one command profiles, detects, scores, and alerts sensibly.
+- 1.5 ✅ Detection: structural, column-value, time-series (volume, freshness, null rate, distinct/duplicates), cold-start safe. Done when: all injected anomalies caught; false positives explainable.
+- 1.6 ✅ Findings lifecycle (dedup, status), health score, alerts + quiet-baseline mode. Done when: one command profiles, detects, scores, and alerts sensibly. (Lab 2026-10-11: 0 false alarms, quiet nights silent.)
 
-**Stage 2 — AI-assisted discovery.** LLM proposes business rules + relationships from schema/profiles → approve/reject → compiled to SQL checks; finding explanations; row-level outliers (ML). Done when: on the lab DB, it proposes most hidden business rules with acceptable precision, and approved rules catch the injected violations.
+**Stage 2 — AI-assisted discovery.** ✅ (2026-10-11; Gemini runs of review/explain pending) LLM proposes business rules + relationships from schema/profiles → approve/reject → compiled to SQL checks; finding explanations; row-level outliers (ML). Done when: on the lab DB, it proposes most hidden business rules with acceptable precision, and approved rules catch the injected violations.
 
-**Stage 3 — More adapters + cross-system.** MySQL, SQL Server, Snowflake (trial + jaffle_shop already loaded), Oracle; source-vs-warehouse reconciliation; DB-health add-on (Postgres first).
+**Stage 3 — More adapters + cross-system.** 🔶 code written, lint clean, tests pending. MySQL, SQL Server, Snowflake (trial + jaffle_shop already loaded), Oracle; source-vs-warehouse reconciliation; DB-health add-on (Postgres first).
 
 **Stage 4 — Productize.** Rules-as-code export (YAML for customer CI), FastAPI, auth, tenant isolation, web UI (findings approve/reject, rule review, relationship map, health dashboard), onboarding (read-only user setup scripts per DB), scheduler/workers, self-monitoring, audit log, **self-hosted Docker packaging**; later a hosted SaaS control plane.
 
@@ -104,11 +104,14 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - Job/ETL-run tracking (ADR 0002, superseded) returns with query-log reading in Stage 1.4+.
 - Lab sources must be registered with `--exclude-schemas aide_lab` (the lab's bookkeeping schema).
 - On Windows with Smart App Control, `aide.exe` and mypy's DLL can be blocked; use `python -m ai_data_engineer …` and the pure-Python mypy install (docs/setup/local_dev.md).
-- History must be recorded in time order: re-running a lab plan against the same data source fails once structure changes (simulated calendar restarts). Workaround: new source name per lab run. Fix: `aide source remove NAME` (deletes a source's metadata) — add in 1.4/1.6.
+- History must be recorded in time order: before re-running a lab plan on the same source, `aide source remove NAME --yes` (1.6).
 - Views are described but not profiled (cost); revisit with per-source opt-in.
 - Discovery settings are global defaults (`discovery/settings.py`); add per-source overrides. Composite links only found with identical column names.
 - Orphan checks run on proposed relationships only at confidence >= 0.9; without `pg_stat_statements`, integer links rarely reach that (no query-log signal) — document for customers.
 - Query-log evidence is now remembered (`query_join`, 1.5); stale orphan findings are marked "not re-checked" (1.5). Generalise the not-re-checked marker to all checks in 1.6.
 - Detection limits: severity per check (not impact-scaled), freshness needs a timestamp/date column (pg_stat counters stored, unused), volume detects drops only, category variants are lexical (synonyms → Stage 2).
-- Findings lifecycle is minimal (dedup + resolve in `detection/recording.py`); alerts/reopen/quiet-baseline in 1.6.
+- Alerts: one channel per source (owner routing needs ownership data, Stage 4); no "all clear" messages; health penalties not impact-weighted.
+- AI rules (2.2): no expressions (`sum(qty*price)`), allowed-values or conditional rules yet; per-source opt-in to share sample values with the LLM; prompt capped at 200 tables (no chunking); proposals aren't refreshed automatically on schema change. Only Gemini implemented; add Claude/others behind `reasoning/llm.py`.
+- Row outliers (2.5): one column at a time, high side only; multi-column ML needs a per-table opt-in (row features leave the DB). Outlier findings of dropped columns aren't auto-resolved.
+- Stage 3: generic adapter samples the *first* N rows above 1M (not random); SQL Server has no session statement timeout; DB health is Postgres-only; reconciliation compares aggregates only (key-level hash comparison planned); Oracle/SQL Server verified only by SQL compilation until a real run.
 - Migrations live in `src/ai_data_engineer/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).

@@ -83,8 +83,19 @@ class Catalog:
     def find(self, schema: str, table: str) -> TableInfo | None:
         """Look a table up; an empty schema matches a uniquely named table in any schema."""
         if schema:
-            return self.tables.get(f"{schema}.{table}")
-        matches = [t for t in self.tables.values() if t.name == table]
+            exact = self.tables.get(f"{schema}.{table}")
+            if exact is not None:
+                return exact
+            # Query logs may spell names in another case (MySQL, SQL Server).
+            matches = [
+                t
+                for t in self.tables.values()
+                if t.schema_name.lower() == schema.lower() and t.name.lower() == table.lower()
+            ]
+        else:
+            matches = [t for t in self.tables.values() if t.name == table]
+            if not matches:
+                matches = [t for t in self.tables.values() if t.name.lower() == table.lower()]
         return matches[0] if len(matches) == 1 else None
 
 

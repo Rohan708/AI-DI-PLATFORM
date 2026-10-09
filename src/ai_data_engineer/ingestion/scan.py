@@ -71,12 +71,33 @@ class UnsupportedSourceError(NotImplementedError):
     pass
 
 
+# Databases served by the generic SQL adapter, with the driver extra to install.
+SQL_ADAPTER_KINDS = {
+    SourceKind.MYSQL: "mysql",
+    SourceKind.SQLSERVER: "sqlserver",
+    SourceKind.ORACLE: "oracle",
+    SourceKind.SNOWFLAKE: "snowflake",
+}
+
+
 def open_adapter(source: DataSource) -> SourceAdapter:
+    url = resolve_connection_url(source.connection_ref)
     if source.kind is SourceKind.POSTGRES:
         from ai_data_engineer.ingestion.postgres import PostgresAdapter
 
-        return PostgresAdapter(resolve_connection_url(source.connection_ref), scan_settings(source))
-    raise UnsupportedSourceError(f"no adapter for {source.kind.value} yet (Stage 3)")
+        return PostgresAdapter(url, scan_settings(source))
+    if source.kind in SQL_ADAPTER_KINDS:
+        from ai_data_engineer.ingestion.sql import SqlAdapter
+
+        try:
+            return SqlAdapter(url, scan_settings(source))
+        except ModuleNotFoundError as exc:  # the database driver isn't installed
+            extra = SQL_ADAPTER_KINDS[source.kind]
+            raise UnsupportedSourceError(
+                f"the driver for {source.kind.value} is missing ({exc.name}); install it with "
+                f'python -m pip install -e ".[{extra}]"'
+            ) from exc
+    raise UnsupportedSourceError(f"no adapter for {source.kind.value} yet")
 
 
 def scan_source(

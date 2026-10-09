@@ -12,6 +12,8 @@ from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
+# "none" = AI features off (everything else still works). More providers plug in here.
+LLMProvider = Literal["none", "gemini"]
 
 
 class Settings(BaseSettings):
@@ -35,6 +37,12 @@ class Settings(BaseSettings):
 
     # Alerting
     slack_webhook_url: SecretStr | None = None
+
+    # AI-assisted discovery (Stage 2). Only proposals; checks never call the LLM.
+    llm_provider: LLMProvider = "none"
+    llm_model: str | None = None  # None = the provider's default (see reasoning/llm.py)
+    llm_timeout_seconds: float = 120.0
+    gemini_api_key: SecretStr | None = None
 
 
 @lru_cache(maxsize=1)

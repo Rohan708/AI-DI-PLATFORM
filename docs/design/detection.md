@@ -55,8 +55,8 @@ A condition is only resolved if its subject was actually **evaluated** this run.
 ### Time series (table-level history)
 | Check | Fires when | Severity |
 |---|---|---|
-| `volume_drop` | rows added since the previous scan < **60%** of the usual, compared with the **same weekday** when there is at least 1 such scan (weekends are naturally quieter). Skips tables that normally gain < 5 rows, and tables that sometimes shrink (full refreshes). | high |
-| `stale_table` | a timestamp/date column that moved forward in ≥ 80% of earlier scans didn't move this time: the job that fills the table probably didn't run. Uses the most regular such column; one finding per table. | high |
+| `volume_drop` | rows added since the previous scan < **60%** of the usual, compared with the **same weekday** when there is at least 1 such scan (weekends are naturally quieter), **and** more than **3×** the natural noise of a count below it (noise ≈ √usual: ±3 for 9 rows a day, ±6.4 for 41), so a slow day on a small table isn't a failed load. No new rows at all always counts. Skips tables that normally gain < 5 rows, and tables that sometimes shrink (full refreshes). | high |
+| `stale_table` | a timestamp/date column that moved forward in ≥ 80% of earlier scans didn't move this time: the job that fills the table probably didn't run. Uses the most regular such column; one finding per table. **Batch vs trickle:** if that column's newest value lands at about the same time of day every scan (a nightly job), or it holds plain dates, the table is a batch load and is always judged. If it lands at a different time each day, rows trickle in from users, and the table is judged only when it usually gains ≥ `freshness_min_trickle_rows` rows per scan (otherwise a quiet day is just chance). | high |
 
 Every finding's **title and description quote the actual numbers**: baseline, current value, threshold, and number of scans used. The **evidence** JSON holds everything needed to verify it.
 
@@ -68,14 +68,18 @@ Every finding's **title and description quote the actual numbers**: baseline, cu
 | `robust_z_threshold` | 4.0 |
 | `null_rate_min_spread` / `null_rate_min_increase` / `null_rate_high_increase` | 0.005 / 0.02 / 0.2 |
 | `magnitude_jump_factor` | 10 |
-| `volume_drop_ratio` / `volume_min_baseline_rows` / `min_same_weekday_samples` | 0.6 / 5 / 1 |
+| `volume_drop_ratio` / `volume_noise_sigmas` / `volume_min_baseline_rows` / `min_same_weekday_samples` | 0.6 / 3.0 / 5 / 1 |
 | `freshness_min_regularity` | 0.8 |
+| `freshness_batch_tolerance_minutes` / `freshness_min_trickle_rows` | 60 / 5 |
 | severities | per check, see tables above |
 
 ## 5. Also in this stage (fixes from 1.4)
 - **Query-log memory:** joins seen in `pg_stat_statements` are stored in our metadata store (`query_join` table, migration `0002`), keeping the largest call count ever observed. A Postgres restart no longer erases "the application joins these columns".
 - **"Not re-checked" marker:** if a relationship's confidence falls below the orphan-check threshold, its open orphan finding stays open but records `rechecked: false` and the reason, instead of silently looking current.
 - **New measurement:** a case-insensitive distinct count for text columns, stored in `column_profile.extra.distinct_case_insensitive`.
+
+## 5b. One scan per day (Stage 1.6)
+Every history a check sees is thinned to one scan per day: when two scans are less than `time_series_min_gap_hours` (20) apart, only the later counts. A second run on the same day re-judges that day; it doesn't see "0 new rows" or absorb today's anomaly into "normal".
 
 ## 6. Benchmark scoring changes
 - **Known baseline issues:** ShopCo has real problems from day one (`INV_LINE_TAX` has no primary key; 12 relationship columns have no index). They're listed in the answer key and reported as *"known baseline issues found"*, not as false alarms. They're matched first, and by check name.
@@ -99,3 +103,6 @@ The integration test `test_benchmark_catches_every_stage_one_anomaly` asserts ex
 | Date | Run | Stage-1 caught | False alarms | Known issues | Notes |
 |---|---|---|---|---|---|
 | 2026-10-07 | lab `standard`, size `small`, seed 42, 15 nightly scans, then `discover` + `detect` | **11 / 11** | 1 | 13 / 13 | Precision 93%, 7 knock-on findings. False alarm: `shop.shipments` volume on a Monday (Saturday orders, quieter) compared with the all-days median, because only 1 earlier Monday existed and 2 were required. **Fixed:** `min_same_weekday_samples` 2 → 1. |
+| 2026-10-08 | integration story test, lab `standard`, size `tiny`, seed 43, `aide run` nightly | — | 2 | — | Two quiet-night alerts: *"shop.customers stopped updating"*. Tiny-lab customers get 0–1 sign-ups a day, so a day without one is chance; a real low-traffic table would cause the same false alarm. **Fixed:** freshness tells batch loads from trickle tables; trickle tables need ≥ 5 rows per scan to be judged. |
+| 2026-10-10 | lab `standard`, size `small`, seed 42, `aide run` every night (source shopco3) | **11 / 11** | 3 | 13 / 13 | Both freshness scenarios still caught after the batch/trickle fix. New false alarms from detecting every night: `volume_drop` on sign-up tables (`customers` 3 vs 9, `addresses` 3 vs 13, `CUST_MASTER` 3 vs 7; also `customer_summary` 4 vs 7 on a quiet night, resolved later). **Fixed:** a drop must also exceed 3× the count's natural noise (√usual). |
+| 2026-10-11 | lab `standard`, size `small`, seed 42, `aide run` every night (source shopco4), after the batch/trickle and count-noise fixes | **11 / 11** | **0** | 13 / 13 | All 13 quiet nights silent; one digest of 19 findings on injection night. Precision 100%, 7 knock-ons. Row outliers (2.5) caught `fat_finger_quantity` (3 rows, up to 250× typical). Business-rule scenarios need approved rules (caught on shopco3). **Stage 1 confirmed.** |

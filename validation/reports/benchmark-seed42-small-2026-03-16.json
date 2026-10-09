@@ -1,6 +1,6 @@
 {
-  "recall": 0.8461538461538461,
-  "precision": 0.9285714285714286,
+  "recall": 0.8571428571428571,
+  "precision": 1.0,
   "relationship_recall": 1.0,
   "relationship_precision": 1.0,
   "by_category": {
@@ -27,11 +27,11 @@
     "time_series": {
       "expected": 3,
       "caught": 3,
-      "false_alarms": 1
+      "false_alarms": 0
     },
     "row_outlier": {
-      "expected": 0,
-      "caught": 0,
+      "expected": 1,
+      "caught": 1,
       "false_alarms": 0
     },
     "cross_system": {
@@ -54,9 +54,7 @@
     "ship_before_order:shop.shipments.shipped_at",
     "invoice_total_mismatch:legacy.INV_HDR.TOTAL_AMT"
   ],
-  "false_alarms": [
-    "volume_drop:shop.shipments"
-  ],
+  "false_alarms": [],
   "relationships_missed": [],
   "relationships_false": [],
   "known_baseline_issues_found": 13,

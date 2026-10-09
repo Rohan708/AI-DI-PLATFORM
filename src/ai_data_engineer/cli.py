@@ -1,20 +1,29 @@
 """Command-line entry point: ``aide``.
 
-``source``/``scan`` (1.3), ``discover``/``relationships``/``docs`` (1.4), ``lab``.
+Everyday use is ``aide run <source>`` (the whole nightly job). The individual steps are
+also available: ``source``/``scan`` (1.3), ``discover``/``relationships``/``docs`` (1.4),
+``detect``/``findings``/``finding`` (1.5-1.6), ``health`` (1.6), ``rules``/``rule``
+(Stage 2: AI-proposed, human-approved business rules), and ``lab`` (test lab).
 """
 
 import argparse
+import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from pydantic import ValidationError
 
 from ai_data_engineer import __version__
 from ai_data_engineer.detection.cli import (
     add_detection_parsers,
+    run_dbhealth_command,
     run_detect_command,
+    run_explain_command,
+    run_finding_command,
     run_findings_command,
+    run_outliers_command,
 )
+from ai_data_engineer.detection.recording import InvalidTransitionError
 from ai_data_engineer.discovery.cli import (
     add_discovery_parsers,
     run_discover_command,
@@ -27,32 +36,73 @@ from ai_data_engineer.ingestion.cli import (
     run_source_command,
 )
 from ai_data_engineer.ingestion.connections import ConnectionRefError
+from ai_data_engineer.ingestion.scan import UnsupportedSourceError
 from ai_data_engineer.ingestion.sources import SourceExistsError, SourceNotFoundError
 from ai_data_engineer.lab.cli import add_lab_parser, run_lab_command
 from ai_data_engineer.lab.runner import UnknownScenarioError
 from ai_data_engineer.lab.schema import LabSafetyError
 from ai_data_engineer.lab.state import LabNotBuiltError
+from ai_data_engineer.pipeline_cli import (
+    add_pipeline_parsers,
+    run_health_command,
+    run_run_command,
+)
+from ai_data_engineer.reasoning.llm import LLMError
+from ai_data_engineer.reconcile.cli import add_reconcile_parser, run_reconcile_command
+from ai_data_engineer.reconcile.run import PairConfigError, PairNotFoundError
+from ai_data_engineer.rules.cli import add_rule_parsers, run_rule_command, run_rules_command
+from ai_data_engineer.rules.store import InvalidRuleError
 
 # Mistakes a user can make: reported as one line, not a traceback.
 USER_ERRORS = (
     SourceExistsError,
     SourceNotFoundError,
     ConnectionRefError,
+    UnsupportedSourceError,
     LabNotBuiltError,
     LabSafetyError,
     UnknownScenarioError,
+    InvalidTransitionError,
+    InvalidRuleError,
+    LLMError,
+    PairNotFoundError,
+    PairConfigError,
+    json.JSONDecodeError,
     ValidationError,
     LookupError,
 )
+
+_COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
+    "run": run_run_command,
+    "health": run_health_command,
+    "source": run_source_command,
+    "scan": run_scan_command,
+    "discover": run_discover_command,
+    "relationships": run_relationships_command,
+    "docs": run_docs_command,
+    "detect": run_detect_command,
+    "findings": run_findings_command,
+    "finding": run_finding_command,
+    "explain": run_explain_command,
+    "outliers": run_outliers_command,
+    "dbhealth": run_dbhealth_command,
+    "rules": run_rules_command,
+    "rule": run_rule_command,
+    "reconcile": run_reconcile_command,
+    "lab": run_lab_command,
+}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="aide", description="AI Data Engineer CLI")
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser("version", help="print the installed version")
+    add_pipeline_parsers(subcommands)
     add_ingestion_parsers(subcommands)
     add_discovery_parsers(subcommands)
     add_detection_parsers(subcommands)
+    add_rule_parsers(subcommands)
+    add_reconcile_parser(subcommands)
     add_lab_parser(subcommands)
 
     args = parser.parse_args(argv)
@@ -66,23 +116,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 def _dispatch(args: argparse.Namespace) -> int:
     if args.command == "version":
         print(__version__)
-    elif args.command == "source":
-        return run_source_command(args)
-    elif args.command == "scan":
-        return run_scan_command(args)
-    elif args.command == "discover":
-        return run_discover_command(args)
-    elif args.command == "relationships":
-        return run_relationships_command(args)
-    elif args.command == "docs":
-        return run_docs_command(args)
-    elif args.command == "detect":
-        return run_detect_command(args)
-    elif args.command == "findings":
-        return run_findings_command(args)
-    elif args.command == "lab":
-        return run_lab_command(args)
-    return 0
+        return 0
+    return _COMMANDS[args.command](args)
 
 
 if __name__ == "__main__":

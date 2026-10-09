@@ -11,16 +11,21 @@ from sqlalchemy.pool import NullPool
 
 from ai_data_engineer.ingestion.base import (
     DiscoveredTable,
+    HealthLimits,
+    HealthReading,
     InclusionResult,
     KeyRef,
     OrphanResult,
+    OutlierResult,
     QueryStat,
+    RuleResult,
     TableMeasurement,
 )
-from ai_data_engineer.ingestion.postgres import relationships
+from ai_data_engineer.ingestion.postgres import health, outliers, relationships, rules
 from ai_data_engineer.ingestion.postgres.catalog import read_activity, read_structure
 from ai_data_engineer.ingestion.postgres.profiling import run_profile
 from ai_data_engineer.ingestion.settings import ScanSettings
+from ai_data_engineer.rules.spec import RuleSpec
 
 # Shown in pg_stat_activity, so the customer's DBA can see (and identify) our queries.
 APPLICATION_NAME = "aide"
@@ -105,3 +110,41 @@ class PostgresAdapter:
             return relationships.count_orphans(
                 conn, child, parent, row_ids, sample_size, self.settings.sample_row_threshold
             )
+
+    # --- business rules (Stage 2) ------------------------------------------------------------
+
+    def check_rule(
+        self,
+        spec: RuleSpec,
+        row_ids: tuple[str, ...],
+        estimated_rows: int | None,
+        sample_size: int,
+    ) -> RuleResult:
+        with self.read_only() as conn:
+            return rules.check_rule(
+                conn, spec, row_ids, estimated_rows, sample_size, self.settings.sample_row_threshold
+            )
+
+    # --- row-level outliers (Stage 2.5) ------------------------------------------------------
+
+    def row_outliers(
+        self,
+        column: KeyRef,
+        row_ids: tuple[str, ...],
+        *,
+        sigmas: float,
+        min_ratio: float,
+        min_spread: float,
+        sample_size: int,
+    ) -> OutlierResult:
+        with self.read_only() as conn:
+            return outliers.row_outliers(
+                conn, column, row_ids, sigmas=sigmas, min_ratio=min_ratio,
+                min_spread=min_spread, sample_size=sample_size,
+                sample_threshold=self.settings.sample_row_threshold,
+            )  # fmt: skip
+
+    # --- database health (Stage 3 add-on) ---------------------------------------------------
+
+    def db_health(self, limits: HealthLimits) -> HealthReading:
+        return health.run_readings(self.read_only, limits)

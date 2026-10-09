@@ -1,5 +1,7 @@
 """Time-series checks on table-level history: volume and freshness."""
 
+import math
+import re
 import uuid
 from dataclasses import dataclass
 from itertools import pairwise
@@ -24,6 +26,7 @@ class _Clock:
     column_key: uuid.UUID
     previous: str  # its maximum at the previous scan
     latest: str  # its maximum now
+    batch: bool  # filled by a scheduled load (see loads_in_batches), not trickling in
 
 
 def volume_drop(ctx: DetectionContext) -> CheckOutput:
@@ -32,8 +35,10 @@ def volume_drop(ctx: DetectionContext) -> CheckOutput:
     s, out = ctx.settings, CheckOutput()
     for table in ctx.catalog.tables.values():
         history, current = ctx.asset_series(table.asset_key)
-        series = [p for p in [*history, current] if p is not None]
-        if current is None or any(p.row_count is None or p.row_count_is_estimate for p in series):
+        if current is None:
+            continue
+        series = [*history, current]
+        if any(p.row_count is None or p.row_count_is_estimate for p in series):
             continue
         deltas = _deltas(series)  # (profile, rows added since the previous scan)
         if len(deltas) < 2:
@@ -55,8 +60,9 @@ def volume_drop(ctx: DetectionContext) -> CheckOutput:
         if usual < s.volume_min_baseline_rows:
             continue
         out.evaluated.add(fp)
-        if added >= s.volume_drop_ratio * usual:
+        if not is_volume_drop(added, usual, s.volume_drop_ratio, s.volume_noise_sigmas):
             continue
+        noise = volume_noise(usual)
         out.observations.append(
             Observation(
                 fingerprint=fp,
@@ -67,13 +73,18 @@ def volume_drop(ctx: DetectionContext) -> CheckOutput:
                     f"Since the previous scan {table.ref} gained {added:,} rows, "
                     f"{added / usual:.0%} of the usual {usual:,.0f} "
                     f"(median of {len(baseline_values)} scans on {basis}). "
-                    "A load may have failed or been partial."
+                    f"The drop of {usual - added:,.0f} rows is "
+                    f"{(usual - added) / noise:.1f}x the normal day-to-day noise for this "
+                    f"table (about ±{noise:,.1f} rows). A load may have failed or been partial."
                 ),
                 evidence={
                     "rows_added": added,
                     "usual_rows_added": usual,
                     "ratio": round(added / usual, 3),
                     "threshold_ratio": s.volume_drop_ratio,
+                    "noise_rows": round(noise, 2),
+                    "drop_in_noise_units": round((usual - added) / noise, 2),
+                    "threshold_noise_units": s.volume_noise_sigmas,
                     "baseline": basis,
                     "baseline_samples": baseline_values,
                 },
@@ -106,7 +117,12 @@ def stale_table(ctx: DetectionContext) -> CheckOutput:
                 continue
             if best is None or regularity > best.regularity:
                 best = _Clock(
-                    regularity, column.name, column.column_key, values[-1], current.max_repr
+                    regularity,
+                    column.name,
+                    column.column_key,
+                    values[-1],
+                    current.max_repr,
+                    loads_in_batches(values, s.freshness_batch_tolerance_minutes),
                 )
         if not enough:
             out.learning += 1
@@ -114,6 +130,9 @@ def stale_table(ctx: DetectionContext) -> CheckOutput:
         fp = fingerprint(STALE_TABLE, table.asset_key)
         if best is None:
             continue  # no column that normally moves: freshness can't be judged
+        trickle = not best.batch
+        if trickle and _usual_rows_added(ctx, table.asset_key) < s.freshness_min_trickle_rows:
+            continue  # rows trickle in a few a day: a quiet day is chance, not a stuck job
         out.evaluated.add(fp)
         if best.latest > best.previous:
             continue
@@ -144,6 +163,56 @@ def stale_table(ctx: DetectionContext) -> CheckOutput:
     return out
 
 
+_TIME_OF_DAY = re.compile(r"[ T](\d{2}):(\d{2})")
+_MINUTES_PER_DAY = 24 * 60
+
+
+def loads_in_batches(maxima: list[str], tolerance_minutes: float) -> bool:
+    """Does a clock column look filled by one scheduled load per scan? Yes if it holds
+    plain dates, or if its newest value lands at about the same time of day every scan
+    (a nightly job stamping 02:00). Rows created by users all day long make the newest
+    value land at a different time each day (17:00, then 09:00): that's trickle."""
+    minutes = []
+    for value in maxima:
+        match = _TIME_OF_DAY.search(value)
+        if match is None:
+            return True  # a date, or an unreadable value: judge it as before
+        minutes.append(int(match[1]) * 60 + int(match[2]))
+    if len(minutes) < 2:
+        return True
+    # Spread of times of day, also measured across midnight (23:50 and 00:10 are close).
+    shifted = [(m + _MINUTES_PER_DAY // 2) % _MINUTES_PER_DAY for m in minutes]
+    spread = min(max(m) - min(m) for m in (minutes, shifted))
+    return spread <= 2 * tolerance_minutes
+
+
+def _usual_rows_added(ctx: DetectionContext, asset_key: uuid.UUID) -> float:
+    """Median rows gained per earlier scan; infinite when that isn't known exactly, so the
+    table is still judged (better a question than a silent miss)."""
+    history, _ = ctx.asset_series(asset_key)
+    if any(p.row_count is None or p.row_count_is_estimate for p in history):
+        return math.inf
+    deltas = [added for _, added in _deltas(history)]
+    return median(deltas) if deltas else math.inf
+
+
+def volume_noise(usual: float) -> float:
+    """Normal day-to-day variation in a count of independently arriving rows: about the
+    square root of the usual count (±3 for 9 rows a day, ±6.4 for 41)."""
+    return math.sqrt(usual)
+
+
+def is_volume_drop(added: int, usual: float, ratio: float, noise_sigmas: float) -> bool:
+    """Far fewer rows than usual: below ``ratio`` of the usual, and further below it than
+    ``noise_sigmas`` times the normal noise, so a slow day on a small table isn't a drop.
+    No new rows at all is always a drop (callers skip tables that usually gain < 5)."""
+    if usual <= 0:
+        return False
+    if added <= 0:
+        return True
+    return added < ratio * usual and usual - added > noise_sigmas * volume_noise(usual)
+
+
 def volume_baseline(
     past: list[tuple[int, int]], weekday: int, min_same_weekday: int
 ) -> tuple[list[int], str]:
@@ -156,10 +225,7 @@ def volume_baseline(
 
 
 def _deltas(series: list[AssetProfile]) -> list[tuple[AssetProfile, int]]:
-    return [
-        (cur, (cur.row_count or 0) - (prev.row_count or 0))
-        for prev, cur in pairwise(series)
-    ]
+    return [(cur, (cur.row_count or 0) - (prev.row_count or 0)) for prev, cur in pairwise(series)]
 
 
 CHECKS = [

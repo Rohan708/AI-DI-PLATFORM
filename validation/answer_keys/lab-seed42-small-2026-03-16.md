@@ -2,7 +2,7 @@
 
 Simulated through **2026-03-16**. Written by the lab *before* detection runs; the scorer compares findings with it.
 
-## Planted anomalies (13)
+## Planted anomalies (14)
 
 | # | Scenario | Category | Where | Expected check | Stage | Effective | What |
 |---|---|---|---|---|---|---|---|
@@ -19,6 +19,7 @@ Simulated through **2026-03-16**. Written by the lab *before* detection runs; th
 | 11 | half_load | time_series | `shop.orders` | volume_drop | 1.5 | 2026-03-16 | Only 40% of the usual daily orders arrived |
 | 12 | ship_before_order | business_rule | `shop.shipments.shipped_at` | rule:shipped_at>=order_date | 2 | 2026-03-16 | 27 shipments have shipped_at two days before their order date |
 | 13 | invoice_total_mismatch | business_rule | `legacy.INV_HDR.TOTAL_AMT` | rule:TOTAL_AMT=sum(INV_LINE.LINE_AMT) | 2 | 2026-03-16 | 24 invoice totals inflated by 10% versus the sum of their lines |
+| 14 | fat_finger_quantity | row_outlier | `shop.order_items.quantity` | row_outlier | 2 | 2026-03-16 | 3 order lines got quantity 500 (normally 1-3) |
 
 ## True relationships (15; 11 hidden)
 

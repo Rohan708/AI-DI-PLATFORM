@@ -10,15 +10,27 @@ The caller owns the transaction.
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ai_data_engineer.detection.checks import ALL_CHECKS
 from ai_data_engineer.detection.context import build_context
 from ai_data_engineer.detection.framework import Check
-from ai_data_engineer.detection.recording import record_finding, resolve_finding
+from ai_data_engineer.detection.recording import (
+    SYSTEM_ACTOR,
+    change_status,
+    record_finding,
+    resolve_finding,
+)
 from ai_data_engineer.detection.settings import DEFAULT_DETECTION_SETTINGS, DetectionSettings
-from ai_data_engineer.graph.models import ACTIVE_FINDING_STATUSES, DataSource, Finding
+from ai_data_engineer.graph.models import (
+    ACTIVE_FINDING_STATUSES,
+    Asset,
+    AssetColumn,
+    DataSource,
+    Finding,
+    FindingStatus,
+)
 
 
 @dataclass
@@ -27,12 +39,18 @@ class CheckSummary:
     refreshed: int = 0
     resolved: int = 0
     learning: int = 0
+    suppressed: int = 0  # seen again, but a person rejected it: not re-raised
 
 
 @dataclass
 class DetectionResult:
     scans_available: int = 0
     by_check: dict[str, CheckSummary] = field(default_factory=dict)
+    subject_removed: int = 0  # findings resolved because their table/column is gone
+
+    @property
+    def suppressed(self) -> int:
+        return sum(s.suppressed for s in self.by_check.values())
 
     @property
     def opened(self) -> int:
@@ -52,6 +70,10 @@ class DetectionResult:
 
     def summary(self) -> str:
         line = f"{self.opened} new findings, {self.refreshed} still open, {self.resolved} resolved"
+        if self.suppressed:
+            line += f", {self.suppressed} suppressed (rejected before)"
+        if self.subject_removed:
+            line += f", {self.subject_removed} closed (table/column gone)"
         if self.learning:
             line += f"; {self.learning} measurements still learning (need more scans)"
         return line
@@ -74,7 +96,7 @@ def detect(
         seen: set[str] = set()
         for obs in output.observations:
             seen.add(obs.fingerprint)
-            _, created = record_finding(
+            finding, created = record_finding(
                 session,
                 source=source,
                 fingerprint=obs.fingerprint,
@@ -92,13 +114,45 @@ def detect(
             )
             if created:
                 summary.opened += 1
+            elif finding.status is FindingStatus.REJECTED:
+                summary.suppressed += 1
             else:
                 summary.refreshed += 1
         if check.kind == "condition":
             for fp in output.evaluated - seen:
                 if resolve_finding(session, source.tenant_id, fp, ctx.now):
                     summary.resolved += 1
+    result.subject_removed = _resolve_removed_subjects(session, source, checks, ctx.now)
     return result
+
+
+def _resolve_removed_subjects(
+    session: Session, source: DataSource, checks: list[Check], now: datetime
+) -> int:
+    """Open *condition* findings about a table or column that no longer exists are resolved
+    (event findings like "column removed" are about the removal itself and stay open)."""
+    conditions = [c.name for c in checks if c.kind == "condition"]
+    stale = session.scalars(
+        select(Finding)
+        .outerjoin(Asset, Asset.asset_key == Finding.asset_key)
+        .outerjoin(AssetColumn, AssetColumn.column_key == Finding.column_key)
+        .where(
+            Finding.data_source_id == source.id,
+            Finding.status.in_(ACTIVE_FINDING_STATUSES),
+            Finding.check_name.in_(conditions),
+            or_(Asset.deleted_at.is_not(None), AssetColumn.deleted_at.is_not(None)),
+        )
+    ).all()
+    for finding in stale:
+        change_status(
+            session,
+            finding,
+            FindingStatus.RESOLVED,
+            actor=SYSTEM_ACTOR,
+            now=now,
+            note="subject removed: the table or column no longer exists",
+        )
+    return len(stale)
 
 
 def open_findings(session: Session, source: DataSource) -> list[Finding]:

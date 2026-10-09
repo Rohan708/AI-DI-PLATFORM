@@ -39,6 +39,8 @@ When Docker isn't running locally, integration tests are **skipped** with a reas
 
 ```bash
 aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
+aide lab run standard --size small --pipeline shopco   # full nightly job each simulated night
+# or step by step:
 aide lab run standard --size small --scan shopco
 aide source show shopco
 aide discover shopco
@@ -48,7 +50,7 @@ aide lab score --data-source shopco
 aide docs shopco
 ```
 
-Re-running a lab plan? Register a new source name (e.g. `shopco2`), because scan history must move forward in time.
+Re-running a lab plan on the same source? Run `aide source remove shopco --yes` first, because scan history must move forward in time.
 
 See [`docs/design/test_lab.md`](../design/test_lab.md) for everything else.
 

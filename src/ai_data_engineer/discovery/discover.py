@@ -163,7 +163,12 @@ def _canonical(pair: frozenset[ColumnRef], catalog: Catalog) -> frozenset[Column
     resolved = []
     for schema, table, column in pair:
         info = catalog.find(schema, table)
-        resolved.append((info.schema_name, info.name, column) if info else (schema, table, column))
+        if info is None:
+            resolved.append((schema, table, column))
+            continue
+        # The catalog's spelling of the column, if the query used another case.
+        actual = next((c for c in info.columns if c.lower() == column.lower()), column)
+        resolved.append((info.schema_name, info.name, column if column in info.columns else actual))
     return frozenset(resolved)
 
 

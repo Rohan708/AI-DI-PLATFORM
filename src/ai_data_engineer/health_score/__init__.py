@@ -1,1 +1,2 @@
-"""Health score calculation and snapshots. Stage 1.5."""
+"""Health score per table, schema and source, computed from open findings and stored as
+snapshots after every run. See docs/design/lifecycle_health_alerts.md."""

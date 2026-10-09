@@ -41,7 +41,8 @@ class Plan:
 STAGE_ONE_SCENARIOS = tuple(
     name
     for name in SCENARIOS
-    if name not in ("ship_before_order", "invoice_total_mismatch")  # need Stage 2 rules
+    # These need Stage 2: business rules, and row-level outliers.
+    if name not in ("ship_before_order", "invoice_total_mismatch", "fat_finger_quantity")
 )
 
 PLANS: dict[str, Plan] = {

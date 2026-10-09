@@ -119,6 +119,46 @@ def test_baseline_issue_catalog() -> None:
     assert hints.count("unindexed_foreign_key") == 12
 
 
+@pytest.mark.parametrize(
+    ("maxima", "batch"),
+    [
+        # a nightly job stamping 02:00 (reporting.daily_sales.loaded_at)
+        (["2026-01-20 02:00:00+00", "2026-01-21 02:00:00+00", "2026-01-22 02:05:00+00"], True),
+        # plain dates (reporting.daily_sales.sales_date)
+        (["2026-01-20", "2026-01-21", "2026-01-22"], True),
+        # a job around midnight: 23:50 and 00:10 are 20 minutes apart
+        (["2026-01-20 23:50:00+00", "2026-01-22 00:10:00+00", "2026-01-22 23:55:00+00"], True),
+        # sign-ups through the day (shop.customers.created_at)
+        (["2026-01-29 09:00:00+00", "2026-01-30 17:00:00+00", "2026-01-31 13:00:00+00"], False),
+    ],
+)
+def test_loads_in_batches(maxima: list[str], batch: bool) -> None:
+    from ai_data_engineer.detection.checks.timeseries import loads_in_batches
+
+    assert loads_in_batches(maxima, tolerance_minutes=60) is batch
+
+
+@pytest.mark.parametrize(
+    ("added", "usual", "drop"),
+    [
+        # small lab 2026-10-10: slow sign-up days, not failed loads
+        (4, 7, False),  # reporting.customer_summary
+        (3, 7, False),  # legacy.CUST_MASTER
+        (3, 9, False),  # shop.customers
+        (3, 13, False),  # shop.addresses (close: drop 10 vs 10.8)
+        # real drops
+        (15, 41, True),  # shop.orders, the planted half load
+        (11, 33, True),  # legacy.INV_HDR, its knock-on
+        (0, 7, True),  # nothing arrived at all
+        (30, 41, False),  # 73% of usual: not a drop
+    ],
+)
+def test_volume_drop_allows_for_count_noise(added: int, usual: float, drop: bool) -> None:
+    from ai_data_engineer.detection.checks.timeseries import is_volume_drop
+
+    assert is_volume_drop(added, usual, ratio=0.6, noise_sigmas=3.0) is drop
+
+
 def test_volume_baseline_prefers_the_same_weekday() -> None:
     from ai_data_engineer.detection.checks.timeseries import volume_baseline
 
@@ -130,12 +170,31 @@ def test_volume_baseline_prefers_the_same_weekday() -> None:
     assert len(values) == len(past)
 
 
-def test_volume_baseline_prefers_the_same_weekday() -> None:
-    from ai_data_engineer.detection.checks.timeseries import volume_baseline
+def test_row_outlier_columns_are_measures_not_keys() -> None:
+    import uuid
 
-    # Mondays are quiet (22), other days busy (40); one earlier Monday is enough.
-    past = [(0, 22), (1, 40), (2, 41), (3, 40), (4, 45), (5, 30), (6, 25)]
-    assert volume_baseline(past, weekday=0, min_same_weekday=1) == ([22], "the same weekday")
-    values, basis = volume_baseline(past, weekday=0, min_same_weekday=2)
-    assert basis == "recent scans"
-    assert len(values) == len(past)
+    from ai_data_engineer.detection.rows import candidate_columns
+    from ai_data_engineer.discovery.catalog import Catalog, ColumnInfo, TableInfo
+    from ai_data_engineer.graph.models import DataSource, TypeFamily
+    from ai_data_engineer.rules.spec import Link
+
+    def col(name: str, family: TypeFamily, distinct: int = 3) -> ColumnInfo:
+        return ColumnInfo(uuid.uuid4(), name, family, family.value, row_count=1000,
+                          null_count=0, distinct_count=distinct)  # fmt: skip
+
+    items = TableInfo(
+        asset_key=uuid.uuid4(), schema_name="shop", name="order_items",
+        columns={c.name: c for c in [
+            col("order_id", TypeFamily.INTEGER, 400), col("line_no", TypeFamily.INTEGER),
+            col("product_id", TypeFamily.INTEGER, 80), col("quantity", TypeFamily.INTEGER),
+            col("unit_price", TypeFamily.DECIMAL, 1000), col("ticket", TypeFamily.INTEGER, 1000),
+        ]},
+        primary_key=("order_id", "line_no"), unique_keys=(), historical_keys=(), foreign_keys=(),
+    )  # fmt: skip
+    catalog = Catalog(source=DataSource(name="t"))
+    catalog.tables[items.ref] = items
+    links: list[Link] = [("shop.order_items", ("product_id",), "shop.products", ("id",))]
+
+    names = [c.name for _, c in candidate_columns(catalog, links)]
+    # keys, relationship columns and all-distinct integers are not measures
+    assert names == ["quantity", "unit_price"]

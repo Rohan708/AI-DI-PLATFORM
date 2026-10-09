@@ -200,6 +200,21 @@
       "related_tables": [
         "legacy.INV_LINE"
       ]
+    },
+    {
+      "scenario": "fat_finger_quantity",
+      "category": "row_outlier",
+      "table": "shop.order_items",
+      "column": "quantity",
+      "check_hint": "row_outlier",
+      "detect_stage": "2",
+      "description": "3 order lines got quantity 500 (normally 1-3)",
+      "effective_day": "2026-03-16",
+      "details": {
+        "rows": 3,
+        "quantity": 500
+      },
+      "related_tables": []
     }
   ],
   "relationships": [

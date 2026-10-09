@@ -103,5 +103,11 @@ class FindingStatus(StrEnum):
     RESOLVED = "resolved"
 
 
+class HealthScope(StrEnum):
+    ASSET = "asset"
+    SCHEMA = "schema"
+    SOURCE = "source"
+
+
 # Statuses in which a finding counts as "active" (used for dedup).
 ACTIVE_FINDING_STATUSES = (FindingStatus.OPEN, FindingStatus.CONFIRMED)

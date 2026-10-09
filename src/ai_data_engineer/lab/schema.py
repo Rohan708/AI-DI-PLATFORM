@@ -201,6 +201,42 @@ TRUE_RELATIONSHIPS: tuple[ExpectedRelationship, ...] = (
     _rel("reporting.customer_summary", "customer_id", "shop.customers", "id", declared=False),
 )
 
+@dataclass(frozen=True)
+class ExpectedRule:
+    """A business rule that holds in clean ShopCo data but is declared nowhere: what we
+    hope the AI proposes (Stage 2). ``other`` is the compared column (same row), a
+    ``schema.table.column`` in a parent table, or the summed child column; None for a
+    comparison with a constant. The operator isn't scored."""
+
+    kind: str
+    table: str
+    column: str
+    other: str | None
+    note: str
+
+
+HIDDEN_RULES: tuple[ExpectedRule, ...] = (
+    ExpectedRule("compare_columns", "shop.shipments", "shipped_at", "shop.orders.order_date",
+                 "a parcel ships after it was ordered (scenario ship_before_order)"),
+    ExpectedRule("compare_columns", "shop.shipments", "delivered_at", "shipped_at",
+                 "delivered after shipped"),
+    ExpectedRule("compare_columns", "shop.payments", "paid_at", "shop.orders.order_date",
+                 "paid after ordering"),
+    ExpectedRule("compare_columns", "shop.payments", "amount", "shop.orders.total_amount",
+                 "one payment of the full order total"),
+    ExpectedRule("sum_matches", "legacy.INV_HDR", "TOTAL_AMT", "legacy.INV_LINE.LINE_AMT",
+                 "invoice total = sum of its lines (scenario invoice_total_mismatch)"),
+    ExpectedRule("compare_constant", "shop.order_items", "quantity", None, "quantity > 0"),
+    ExpectedRule("compare_constant", "shop.order_items", "unit_price", None, "price >= 0"),
+    ExpectedRule("compare_constant", "shop.products", "unit_price", None, "price > 0"),
+    ExpectedRule("compare_constant", "shop.orders", "total_amount", None, "total >= 0"),
+    ExpectedRule("compare_constant", "shop.payments", "amount", None, "amount > 0"),
+    ExpectedRule("compare_constant", "legacy.INV_LINE", "QTY", None, "quantity > 0"),
+    ExpectedRule("compare_constant", "legacy.INV_LINE", "LINE_AMT", None, "amount >= 0"),
+    ExpectedRule("compare_constant", "legacy.INV_LINE_TAX", "TAX_AMT", None, "tax >= 0"),
+)  # fmt: skip
+
+
 # Legitimate patterns that look odd but are NOT anomalies (false-alarm traps).
 NORMAL_PATTERNS: tuple[str, ...] = (
     "shop.customers.middle_name is ~60% NULL (most people have none)",

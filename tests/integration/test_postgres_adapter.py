@@ -28,10 +28,14 @@ from ai_data_engineer.graph.models import (
 from ai_data_engineer.graph.queries import get_current_structure
 from ai_data_engineer.ingestion.base import (
     DiscoveredTable,
+    HealthLimits,
+    HealthReading,
     InclusionResult,
     KeyRef,
     OrphanResult,
+    OutlierResult,
     QueryStat,
+    RuleResult,
     TableMeasurement,
 )
 from ai_data_engineer.ingestion.postgres import PostgresAdapter
@@ -40,6 +44,7 @@ from ai_data_engineer.ingestion.settings import ScanSettings
 from ai_data_engineer.ingestion.sources import add_source, get_source
 from ai_data_engineer.lab.runner import build_lab, inject, lab_scan_time, run_plan
 from ai_data_engineer.lab.schema import TRUE_RELATIONSHIPS
+from ai_data_engineer.rules.spec import RuleSpec
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 LAB_TABLES = {
@@ -297,6 +302,33 @@ class _FailOn:
         self, child: KeyRef, parent: KeyRef, row_ids: tuple[str, ...], sample_size: int
     ) -> OrphanResult:
         return self.inner.count_orphans(child, parent, row_ids, sample_size)
+
+    def check_rule(
+        self,
+        spec: RuleSpec,
+        row_ids: tuple[str, ...],
+        estimated_rows: int | None,
+        sample_size: int,
+    ) -> RuleResult:
+        return self.inner.check_rule(spec, row_ids, estimated_rows, sample_size)
+
+    def row_outliers(
+        self,
+        column: KeyRef,
+        row_ids: tuple[str, ...],
+        *,
+        sigmas: float,
+        min_ratio: float,
+        min_spread: float,
+        sample_size: int,
+    ) -> OutlierResult:
+        return self.inner.row_outliers(
+            column, row_ids, sigmas=sigmas, min_ratio=min_ratio, min_spread=min_spread,
+            sample_size=sample_size,
+        )  # fmt: skip
+
+    def db_health(self, limits: HealthLimits) -> HealthReading:
+        return self.inner.db_health(limits)
 
     def profile(self, table: DiscoveredTable) -> TableMeasurement:
         if table.ref == self.ref:

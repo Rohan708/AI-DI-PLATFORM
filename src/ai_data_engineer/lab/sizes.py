@@ -14,7 +14,9 @@ class LabSize:
 
 
 SIZES: dict[str, LabSize] = {
-    "tiny": LabSize("tiny", customers=60, products=20, history_days=20, orders_per_day=8),
+    # 30 orders a day, not fewer: below that a planted half load (40%) can't be told from
+    # a slow day once count noise is allowed for (detection's volume_noise_sigmas).
+    "tiny": LabSize("tiny", customers=60, products=20, history_days=20, orders_per_day=30),
     "small": LabSize("small", customers=600, products=80, history_days=60, orders_per_day=40),
     "default": LabSize(
         "default", customers=3000, products=200, history_days=90, orders_per_day=150

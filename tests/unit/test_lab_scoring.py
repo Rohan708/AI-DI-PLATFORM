@@ -149,8 +149,9 @@ def test_relationship_catalog() -> None:
 
 
 def test_scenario_catalog_and_plans() -> None:
-    assert len(SCENARIOS) == 12
+    assert len(SCENARIOS) == 13
     assert "ship_before_order" not in STAGE_ONE_SCENARIOS
+    assert "fat_finger_quantity" not in STAGE_ONE_SCENARIOS
     covered = {s.category for s in SCENARIOS.values()}
     assert covered == {
         FindingCategory.STRUCTURAL,
@@ -158,6 +159,7 @@ def test_scenario_catalog_and_plans() -> None:
         FindingCategory.COLUMN_VALUE,
         FindingCategory.TIME_SERIES,
         FindingCategory.BUSINESS_RULE,
+        FindingCategory.ROW_OUTLIER,
     }
     for plan in PLANS.values():
         assert set(plan.scenarios) <= set(SCENARIOS)

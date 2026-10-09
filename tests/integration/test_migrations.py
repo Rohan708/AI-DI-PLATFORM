@@ -21,6 +21,9 @@ EXPECTED_TABLES = {
     "rule",
     "finding",
     "query_join",
+    "finding_event",
+    "health_snapshot",
+    "reconciliation_pair",
 }
 
 

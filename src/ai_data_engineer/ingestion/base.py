@@ -8,10 +8,13 @@ Snowflake implement the same contract later.
 
 from dataclasses import dataclass, field
 from types import TracebackType
-from typing import Any, Protocol, Self
+from typing import TYPE_CHECKING, Any, Protocol, Self
 
 from ai_data_engineer.graph.models import AssetKind
 from ai_data_engineer.graph.versioning import AssetObservation
+
+if TYPE_CHECKING:
+    from ai_data_engineer.rules.spec import RuleSpec
 
 # Only these kinds hold their own data; views are described but not profiled (querying a
 # view can be arbitrarily expensive).
@@ -99,9 +102,59 @@ class OrphanResult:
 
 
 @dataclass(frozen=True)
+class RuleResult:
+    checked_rows: int  # rows the rule could judge (compared values not NULL)
+    violating_rows: int
+    sample: list[dict[str, str]]  # identifiers of some violating rows (primary key)
+    sampled: bool
+
+
+@dataclass(frozen=True)
+class OutlierResult:
+    checked_rows: int  # rows with a positive value
+    median: float | None  # typical value (an aggregate)
+    cutoff: float | None  # values above this count as outliers
+    outlier_rows: int
+    max_ratio: float | None  # largest value / median
+    sample: list[dict[str, str]]  # primary keys of the most extreme rows
+    sampled: bool
+
+
+@dataclass(frozen=True)
+class HealthLimits:
+    """Thresholds for database-health readings (see ``detection.dbhealth``)."""
+
+    unused_index_min_bytes: int
+    unused_index_min_stats_days: float
+    bloat_min_dead_rows: int
+    bloat_min_dead_ratio: float
+    slow_query_min_mean_ms: float
+    slow_query_min_calls: int
+    idle_transaction_min_seconds: float
+    sequence_max_used: float
+
+
+@dataclass(frozen=True)
+class HealthIssue:
+    kind: str  # unused_index, table_bloat, slow_query, idle_in_transaction, ...
+    subject: str  # what it's about: an index, a table, a query id
+    table_ref: str | None  # "schema.table" when it's about one table
+    numbers: dict[str, Any]
+    summary: str  # one line, with the numbers
+
+
+@dataclass(frozen=True)
+class HealthReading:
+    issues: list[HealthIssue]
+    checks_run: tuple[str, ...]  # readings that ran (their old findings may resolve)
+    skipped: dict[str, str] = field(default_factory=dict)  # reading -> why not
+
+
+@dataclass(frozen=True)
 class QueryStat:
-    query: str  # normalised statement text (constants replaced by placeholders)
+    query: str  # statement text (normalised, constants replaced, where the DB does that)
     calls: int
+    dialect: str = "postgres"  # sqlglot dialect to parse it with
 
 
 class SourceAdapter(Protocol):
@@ -117,6 +170,30 @@ class SourceAdapter(Protocol):
     def count_orphans(
         self, child: KeyRef, parent: KeyRef, row_ids: tuple[str, ...], sample_size: int
     ) -> OrphanResult: ...
+
+    # --- used by business rules (Stage 2) ----------------------------------------------
+    def check_rule(
+        self,
+        spec: "RuleSpec",
+        row_ids: tuple[str, ...],
+        estimated_rows: int | None,
+        sample_size: int,
+    ) -> RuleResult: ...
+
+    # --- used by row-level outliers (Stage 2.5) ---------------------------------------
+    def row_outliers(
+        self,
+        column: KeyRef,
+        row_ids: tuple[str, ...],
+        *,
+        sigmas: float,
+        min_ratio: float,
+        min_spread: float,
+        sample_size: int,
+    ) -> OutlierResult: ...
+
+    # --- database health (Stage 3 add-on; adapters without it return an empty reading) ---
+    def db_health(self, limits: HealthLimits) -> HealthReading: ...
 
     def __enter__(self) -> Self: ...
 

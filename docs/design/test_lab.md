@@ -77,7 +77,7 @@ These look odd but are **not** problems. A good detector stays quiet about them:
 ### Sizes
 | Size | Customers | Products | History days | Orders/day (baseline) | Use |
 |---|---|---|---|---|---|
-| `tiny` | 60 | 20 | 20 | 8 | automated tests |
+| `tiny` | 60 | 20 | 20 | 30 | automated tests (30 orders a day so a planted half load stands out from count noise) |
 | `small` | 600 | 80 | 60 | 40 | quick manual runs |
 | `default` | 3,000 | 200 | 90 | 150 | the benchmark |
 
@@ -100,6 +100,7 @@ Each scenario breaks something specific **and writes its own answer-key entry** 
 | `half_load` | time series | `shop.orders` | the next day only 40% of orders arrive (spills into items, payments, legacy, reporting) | 1.5 |
 | `ship_before_order` | business rule | `shop.shipments.shipped_at` | 1% shipped two days *before* the order | 2 |
 | `invoice_total_mismatch` | business rule | `legacy.INV_HDR.TOTAL_AMT` | 1% of invoice totals inflated 10% over their lines | 2 |
+| `fat_finger_quantity` | row outlier | `shop.order_items.quantity` | 3 order lines get quantity 500 (normally 1–3) | 2.5 |
 
 Faults (`skipped_load`, `half_load`) are scheduled and happen on the **next** simulated day. Every entry records its `effective_day`: the first day whose scan should show the problem.
 
@@ -156,7 +157,14 @@ Until detection exists (Stage 1.5), the score is 0 caught, which is expected.
 | `aide lab answer-key [--out DIR]` | write the answer key |
 | `aide lab score [--data-source NAME] [--out DIR]` | benchmark report |
 
-### Full benchmark loop (from Stage 1.4)
+### The nightly pipeline (from Stage 1.6)
+```bash
+aide lab run standard --size small --pipeline shopco   # scan+discover+detect+health+alert every night
+aide lab score --data-source shopco
+```
+Night 1 prints *quiet baseline*; the injection night prints one digest with the planted problems.
+
+### Full benchmark loop, step by step (from Stage 1.4)
 ```bash
 aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
 aide lab run standard --size small --scan shopco   # build, nightly scans, plant, scan
