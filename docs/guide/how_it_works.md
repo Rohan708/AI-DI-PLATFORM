@@ -187,7 +187,7 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 2.1–2.2 | AI proposes business rules (*"ship date must be after order date"*, *"invoice total = sum of lines"*); humans approve; the engine checks them as plain SQL | ✅ Gemini proposed 12 of 13 hidden rules; approved rules caught both planted problems |
 | 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ tests pass; first Gemini run pending |
 | 2.5 | Unusual individual rows (*"3 order lines have quantity 500; normally 1–3"*), computed inside the database, IDs attached | ✅ caught on the lab, 0 false alarms |
-| 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | code written, lint clean; tests next |
+| 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
 | 4 | Product: web UI, API, accounts, self-hosted Docker package, onboarding | |
 | 5 | Beta with 1–3 real companies; accuracy track record | |
 | 6 | Root cause ("why did this happen?") and suggested fixes | |
