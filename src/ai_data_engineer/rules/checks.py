@@ -71,12 +71,16 @@ def check_rules(
     Stamped with the latest scan's time, like discovery, so the lab calendar stays in order."""
     if not rules_of(session, source, RuleStatus.ACTIVE):
         return RuleCheckResult()  # nothing approved yet: don't even connect
-    now = now or session.scalar(
-        select(IngestionRun.started_at)
-        .where(IngestionRun.data_source_id == source.id)
-        .order_by(IngestionRun.started_at.desc())
-        .limit(1)
-    ) or utcnow()
+    now = (
+        now
+        or session.scalar(
+            select(IngestionRun.started_at)
+            .where(IngestionRun.data_source_id == source.id)
+            .order_by(IngestionRun.started_at.desc())
+            .limit(1)
+        )
+        or utcnow()
+    )
     catalog = load_catalog(session, source)
     with adapter_factory(source) as adapter:
         return run_rule_checks(session, catalog, adapter, now, settings)

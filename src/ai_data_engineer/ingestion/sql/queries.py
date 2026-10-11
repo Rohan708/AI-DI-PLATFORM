@@ -204,8 +204,9 @@ def value_inclusion(
     src, sampled = _key_rows(child, (), max_rows, threshold)
     found = _has_parent(src, child, parent)
     row = conn.execute(
-        select(func.count().label("checked"), func.sum(case((found, 1), else_=0)).label("hit"))
-        .select_from(src)
+        select(
+            func.count().label("checked"), func.sum(case((found, 1), else_=0)).label("hit")
+        ).select_from(src)
     ).one()
     return InclusionResult(int(row.checked or 0), int(row.hit or 0), sampled)
 
@@ -222,8 +223,9 @@ def count_orphans(
     src, sampled = _key_rows(child, ids, threshold, threshold)
     orphan = not_(_has_parent(src, child, parent))
     row = conn.execute(
-        select(func.count().label("checked"), func.sum(case((orphan, 1), else_=0)).label("bad"))
-        .select_from(src)
+        select(
+            func.count().label("checked"), func.sum(case((orphan, 1), else_=0)).label("bad")
+        ).select_from(src)
     ).one()
     bad = int(row.bad or 0)
     sample = _ids(conn, src, ids, orphan, sample_size) if bad else []
@@ -353,8 +355,9 @@ def row_outliers(
     cutoff = math.exp(centre + max(sigmas * spread, math.log(min_ratio)))
     above = v > literal(cutoff)
     stats = conn.execute(
-        select(func.sum(case((above, 1), else_=0)).label("bad"), func.max(v).label("top"))
-        .select_from(s)
+        select(
+            func.sum(case((above, 1), else_=0)).label("bad"), func.max(v).label("top")
+        ).select_from(s)
     ).one()
     bad = int(stats.bad or 0)
     sample: list[dict[str, str]] = []
@@ -362,12 +365,9 @@ def row_outliers(
         found = conn.execute(
             select(*[s.c[x] for x in labels]).where(above).order_by(v.desc()).limit(sample_size)
         )
-        sample = [
-            {r: as_text(val) or "" for r, val in zip(row_ids, f, strict=True)} for f in found
-        ]
+        sample = [{r: as_text(val) or "" for r, val in zip(row_ids, f, strict=True)} for f in found]
     top = float(stats.top) if stats.top is not None else None
     return OutlierResult(
         checked_rows=n, median=median, cutoff=cutoff, outlier_rows=bad,
         max_ratio=top / median if top is not None else None, sample=sample, sampled=sampled,
     )  # fmt: skip
-

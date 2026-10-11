@@ -26,7 +26,15 @@ from ai_data_engineer.reconcile.run import pairs_of, reconcile
 from ai_data_engineer.rules.checks import check_rules
 
 STEPS = (
-    "scan", "discover", "rules", "rows", "dbhealth", "detect", "reconcile", "health", "alert",
+    "scan",
+    "discover",
+    "rules",
+    "rows",
+    "dbhealth",
+    "detect",
+    "reconcile",
+    "health",
+    "alert",
 )
 
 
@@ -113,8 +121,10 @@ def run_pipeline(
     # Pairs this source belongs to (either side), from both sides' latest scans.
     if not step(
         "reconcile",
-        lambda: "; ".join(reconcile(session, p).summary() for p in pairs_of(session, source))
-        or "no reconciliation pairs",
+        lambda: (
+            "; ".join(reconcile(session, p).summary() for p in pairs_of(session, source))
+            or "no reconciliation pairs"
+        ),
     ):
         return result
     if not step("health", lambda: compute_health(session, source, now).summary().splitlines()[0]):

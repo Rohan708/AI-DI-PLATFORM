@@ -71,8 +71,7 @@ def _catalog() -> Catalog:
             "shop.orders",
             _col("order_id", TypeFamily.INTEGER),
             _col("order_date", TypeFamily.TIMESTAMP),
-            _col("qty", TypeFamily.INTEGER, row_count=10, null_count=1, min_repr="1",
-                 max_repr="9"),
+            _col("qty", TypeFamily.INTEGER, row_count=10, null_count=1, min_repr="1", max_repr="9"),
             _col("email", TypeFamily.STRING, min_repr="a@x.io", max_repr="z@x.io"),
         ),
         _table(
@@ -131,8 +130,13 @@ def test_validation_against_the_catalog() -> None:
     assert validate(parse_spec({**QTY, "column": "email"}), catalog) == [
         "shop.orders.email is not numeric"
     ]
-    same_row = {"kind": "compare_columns", "table": "shop.shipments", "column": "shipped_at",
-                "op": ">=", "other_column": "carrier"}
+    same_row = {
+        "kind": "compare_columns",
+        "table": "shop.shipments",
+        "column": "shipped_at",
+        "op": ">=",
+        "other_column": "carrier",
+    }
     assert "can't be compared" in validate(parse_spec(same_row), catalog)[0]
     # joins must follow a known relationship
     assert validate(parse_spec(SHIPPED), catalog, links=[])[0].startswith("no known relationship")

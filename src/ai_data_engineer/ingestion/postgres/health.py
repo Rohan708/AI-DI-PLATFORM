@@ -104,8 +104,12 @@ def _bloat(conn: Connection, limits: HealthLimits) -> list[HealthIssue]:
                 TABLE_BLOAT,
                 subject=f"{r.schemaname}.{r.relname}",
                 table_ref=f"{r.schemaname}.{r.relname}",
-                numbers={"dead_rows": int(r.n_dead_tup), "live_rows": int(r.n_live_tup),
-                         "dead_share": round(share, 4), "last_vacuum": vacuumed},
+                numbers={
+                    "dead_rows": int(r.n_dead_tup),
+                    "live_rows": int(r.n_live_tup),
+                    "dead_share": round(share, 4),
+                    "last_vacuum": vacuumed,
+                },
                 summary=(
                     f"{r.schemaname}.{r.relname} has {int(r.n_dead_tup):,} dead rows "
                     f"({share:.0%} of the table); last vacuum: {vacuumed}"
@@ -124,9 +128,12 @@ def _slow(conn: Connection, limits: HealthLimits) -> list[HealthIssue]:
             SLOW_QUERY,
             subject=f"query {r.queryid}",
             table_ref=None,
-            numbers={"calls": int(r.calls), "mean_ms": round(float(r.mean_exec_time), 1),
-                     "total_ms": round(float(r.total_exec_time), 1),
-                     "statement": " ".join(str(r.query).split())[:300]},
+            numbers={
+                "calls": int(r.calls),
+                "mean_ms": round(float(r.mean_exec_time), 1),
+                "total_ms": round(float(r.total_exec_time), 1),
+                "statement": " ".join(str(r.query).split())[:300],
+            },
             summary=(
                 f"a query called {int(r.calls):,} times takes {float(r.mean_exec_time):,.0f} ms "
                 f"on average: {' '.join(str(r.query).split())[:80]}"
@@ -146,8 +153,11 @@ def _idle(conn: Connection, limits: HealthLimits) -> list[HealthIssue]:
             IDLE_IN_TRANSACTION,
             subject="idle in transaction",
             table_ref=None,
-            numbers={"sessions": int(r.sessions), "longest_minutes": round(minutes, 1),
-                     "applications": r.apps},
+            numbers={
+                "sessions": int(r.sessions),
+                "longest_minutes": round(minutes, 1),
+                "applications": r.apps,
+            },
             summary=(
                 f"{int(r.sessions)} sessions sit idle inside an open transaction (longest "
                 f"{minutes:.0f} min; apps: {r.apps}); they hold locks and block vacuum"
@@ -165,8 +175,11 @@ def _sequences(conn: Connection, limits: HealthLimits) -> list[HealthIssue]:
                 SEQUENCE_EXHAUSTION,
                 subject=f"{r.schemaname}.{r.sequencename}",
                 table_ref=None,
-                numbers={"last_value": int(r.last_value), "max_value": int(r.max_value),
-                         "used": round(used, 4)},
+                numbers={
+                    "last_value": int(r.last_value),
+                    "max_value": int(r.max_value),
+                    "used": round(used, 4),
+                },
                 summary=(
                     f"sequence {r.schemaname}.{r.sequencename} has used {used:.0%} of its "
                     f"range ({int(r.last_value):,} of {int(r.max_value):,}); inserts fail "

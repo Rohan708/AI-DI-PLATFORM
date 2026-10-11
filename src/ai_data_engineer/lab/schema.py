@@ -201,6 +201,7 @@ TRUE_RELATIONSHIPS: tuple[ExpectedRelationship, ...] = (
     _rel("reporting.customer_summary", "customer_id", "shop.customers", "id", declared=False),
 )
 
+
 @dataclass(frozen=True)
 class ExpectedRule:
     """A business rule that holds in clean ShopCo data but is declared nowhere: what we

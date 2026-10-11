@@ -131,9 +131,20 @@ PROFILES: dict[str, DialectProfile] = {
         name="mssql",
         sqlglot="tsql",
         system_schemas=frozenset(
-            {"sys", "INFORMATION_SCHEMA", "guest", "db_owner", "db_accessadmin",
-             "db_securityadmin", "db_ddladmin", "db_backupoperator", "db_datareader",
-             "db_datawriter", "db_denydatareader", "db_denydatawriter"}
+            {
+                "sys",
+                "INFORMATION_SCHEMA",
+                "guest",
+                "db_owner",
+                "db_accessadmin",
+                "db_securityadmin",
+                "db_ddladmin",
+                "db_backupoperator",
+                "db_datareader",
+                "db_datawriter",
+                "db_denydatareader",
+                "db_denydatawriter",
+            }
         ),
         session_sql=_mssql_session,
         estimates_sql=text(

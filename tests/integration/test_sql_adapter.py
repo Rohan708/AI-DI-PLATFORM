@@ -176,7 +176,7 @@ def _seed_shop(url: str) -> None:
                 {"order_id": n, "line_no": i + 1, "quantity": q, "unit_price": p}
                 for i, (q, p) in enumerate(lines)
             ]
-        for row in item_rows[100:100 + FAT_FINGERS]:
+        for row in item_rows[100 : 100 + FAT_FINGERS]:
             row["quantity"] = 500
         conn.execute(orders.insert(), order_rows)
         conn.execute(items.insert(), item_rows)

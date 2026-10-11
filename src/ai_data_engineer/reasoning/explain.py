@@ -186,9 +186,7 @@ def finding_context(
     return context
 
 
-def check_explanation(
-    data: Any, context: dict[str, Any]
-) -> tuple[dict[str, Any] | None, str]:
+def check_explanation(data: Any, context: dict[str, Any]) -> tuple[dict[str, Any] | None, str]:
     """(explanation, "") if usable, else (None, why)."""
     if not isinstance(data, dict):
         return None, "not a JSON object"
@@ -279,9 +277,7 @@ def _table(table: TableInfo, finding: Finding) -> dict[str, Any]:
         "primary_key": list(table.primary_key),
         "columns": [c.name for c in table.columns.values()],
     }
-    column = next(
-        (c for c in table.columns.values() if c.column_key == finding.column_key), None
-    )
+    column = next((c for c in table.columns.values() if c.column_key == finding.column_key), None)
     if column is not None:
         out["column"] = {
             "name": column.name,

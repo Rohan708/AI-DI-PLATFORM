@@ -44,9 +44,7 @@ class InvalidRuleError(ValueError):
     pass
 
 
-def known_relationships(
-    session: Session, catalog: Catalog
-) -> list[tuple[Link, str, float | None]]:
+def known_relationships(session: Session, catalog: Catalog) -> list[tuple[Link, str, float | None]]:
     """Every current relationship nobody rejected, as (link, status, confidence)."""
     names = {
         column.column_key: (table.ref, column.name)
@@ -154,9 +152,7 @@ def review_rule(
     note: str | None = None,
 ) -> None:
     if to_status not in ALLOWED_RULE_TRANSITIONS[rule.status]:
-        raise InvalidRuleError(
-            f"a rule that is {rule.status.value} can't become {to_status.value}"
-        )
+        raise InvalidRuleError(f"a rule that is {rule.status.value} can't become {to_status.value}")
     history = list(rule.evidence.get("review_history", []))
     history.append(
         {

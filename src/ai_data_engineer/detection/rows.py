@@ -91,12 +91,16 @@ def check_row_outliers(
     settings: DetectionSettings = DEFAULT_DETECTION_SETTINGS,
 ) -> OutlierCheckResult:
     """``aide run``'s ``rows`` step. Stamped with the latest scan's time, like discovery."""
-    now = now or session.scalar(
-        select(IngestionRun.started_at)
-        .where(IngestionRun.data_source_id == source.id)
-        .order_by(IngestionRun.started_at.desc())
-        .limit(1)
-    ) or utcnow()
+    now = (
+        now
+        or session.scalar(
+            select(IngestionRun.started_at)
+            .where(IngestionRun.data_source_id == source.id)
+            .order_by(IngestionRun.started_at.desc())
+            .limit(1)
+        )
+        or utcnow()
+    )
     catalog = load_catalog(session, source)
     columns = [
         (t, c)

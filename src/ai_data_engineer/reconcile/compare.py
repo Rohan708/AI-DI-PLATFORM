@@ -187,4 +187,3 @@ def same(a: float | datetime | date, b: float | datetime | date) -> bool:
     if isinstance(a, float) and isinstance(b, float):
         return math.isclose(a, b, rel_tol=1e-9, abs_tol=1e-9)
     return a == b
-

@@ -99,12 +99,16 @@ def check_db_health(
     now: datetime | None = None,
     settings: DbHealthSettings = DEFAULT_DB_HEALTH_SETTINGS,
 ) -> DbHealthResult:
-    now = now or session.scalar(
-        select(IngestionRun.started_at)
-        .where(IngestionRun.data_source_id == source.id)
-        .order_by(IngestionRun.started_at.desc())
-        .limit(1)
-    ) or utcnow()
+    now = (
+        now
+        or session.scalar(
+            select(IngestionRun.started_at)
+            .where(IngestionRun.data_source_id == source.id)
+            .order_by(IngestionRun.started_at.desc())
+            .limit(1)
+        )
+        or utcnow()
+    )
     with adapter_factory(source) as adapter:
         reading = adapter.db_health(settings.limits())
     result = DbHealthResult(checks_run=reading.checks_run, skipped=reading.skipped)
