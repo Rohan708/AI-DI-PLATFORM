@@ -42,6 +42,9 @@ class DialectProfile:
     estimates_sql: TextClause | None = None
     # (query, calls), most called first; takes :limit. Failure = no query-log evidence.
     query_log_sql: TextClause | None = None
+    # (schema, name) of objects the database's extensions own (never scanned), e.g. the
+    # pg_stat_statements views Postgres puts in the public schema.
+    extension_objects_sql: TextClause | None = None
     stddev: str = "stddev_samp"
     length: str = "length"
     ln: str = "ln"
@@ -93,6 +96,12 @@ PROFILES: dict[str, DialectProfile] = {
             "CASE WHEN c.reltuples < 0 THEN NULL ELSE c.reltuples::bigint END, "
             "pg_total_relation_size(c.oid) FROM pg_class c "
             "JOIN pg_namespace n ON n.oid = c.relnamespace WHERE c.relkind IN ('r', 'p', 'm')"
+        ),
+        extension_objects_sql=text(
+            "SELECT n.nspname, c.relname FROM pg_class c "
+            "JOIN pg_namespace n ON n.oid = c.relnamespace "
+            "JOIN pg_depend d ON d.objid = c.oid AND d.classid = 'pg_class'::regclass "
+            "AND d.deptype = 'e'"
         ),
         query_log_sql=text(
             "SELECT query, calls FROM pg_stat_statements WHERE dbid = "

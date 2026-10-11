@@ -1,6 +1,6 @@
 # Design: more databases, reconciliation, database health (Stage 3)
 
-**Status:** code written 2026-10-10; ruff + mypy clean 2026-10-11; tests not yet run.
+**Status:** ✅ tests pass 2026-10-11 (Postgres + MySQL); SQL Server / Oracle by SQL compilation; Snowflake manual run pending.
 **Setup per database:** [`docs/setup/databases.md`](../setup/databases.md).
 
 ## 1. One generic adapter (3.1)
@@ -85,4 +85,4 @@ scan → discover → rules → rows → dbhealth → detect → reconcile → h
 ## 6. Results log
 | Date | Run | Result | Notes |
 |---|---|---|---|
-| | | | |
+| 2026-10-11 | Stage 3 tests: unit (dialect SQL, type mapping, reconcile rules) + integration (Postgres lab, MySQL 8.0 container) | **34 unit + 4 integration pass** | Generic adapter on the Postgres lab = tuned adapter (same counts, same relationships) after one fix: **skip objects owned by extensions** (it had scanned the `pg_stat_statements` views in `public`, which the tuned adapter already skipped). MySQL end to end: scan, discovered `orders.cust_no -> customers.id`, 10 orphans with ids, missing PK, a rule with 5 violations, 3 fat-finger rows, and a write inside the read-only session refused. Reconciliation: identical copies 0 findings; after deleting 7 orders + nulling postal codes, exactly the 3 expected findings. DB health: sequence at 95%, unused index, idle-in-transaction session found and resolved. Test fix: the copy's re-scan needs a later timestamp (same-instant scans tie on "latest"). |

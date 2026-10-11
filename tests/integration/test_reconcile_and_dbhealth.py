@@ -7,7 +7,7 @@ transaction are found, and resolve once fixed.
 """
 
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from sqlalchemy import create_engine, select, text
@@ -64,9 +64,10 @@ def test_reconciliation_reports_exactly_what_the_copy_lost(
                      {"n": MISSING_ORDERS})  # fmt: skip
         conn.execute(text("UPDATE shop.addresses SET postal_code = NULL WHERE id % 10 = 0"))
     engine.dispose()
-    scan_source(session, copy, observed_at=T1, adapter_factory=_factory(copy_url))
+    later = T1 + timedelta(hours=1)  # the copy's next scan (a scan at the same instant ties)
+    scan_source(session, copy, observed_at=later, adapter_factory=_factory(copy_url))
 
-    differs = reconcile(session, pair, now=T1)
+    differs = reconcile(session, pair, now=later)
     findings = session.scalars(select(Finding).where(Finding.data_source_id == app.id)).all()
     by_check = {(f.check_name, f.evidence["left_table"], f.evidence["column"]) for f in findings}
     assert ("reconcile_row_count", "shop.orders", None) in by_check

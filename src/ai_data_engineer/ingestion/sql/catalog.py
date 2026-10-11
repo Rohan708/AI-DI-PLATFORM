@@ -23,11 +23,22 @@ def read_structure(
 ) -> list[DiscoveredTable]:
     insp = inspect(conn)
     estimates = _estimates(conn, profile)
+    skip = _extension_objects(conn, profile)
     namespace = conn.engine.url.database or ""
     found: list[DiscoveredTable] = []
     for schema in schemas_to_scan(insp, profile, settings):
-        found += _schema(insp, conn, schema, namespace, estimates)
+        found += _schema(insp, conn, schema, namespace, estimates, skip)
     return found
+
+
+def _extension_objects(conn: Connection, profile: DialectProfile) -> set[tuple[str, str]]:
+    if profile.extension_objects_sql is None:
+        return set()
+    try:
+        rows = conn.execute(profile.extension_objects_sql).all()
+    except DBAPIError:
+        return set()
+    return {(str(r[0]).lower(), str(r[1]).lower()) for r in rows}
 
 
 def schemas_to_scan(insp: Inspector, profile: DialectProfile, settings: ScanSettings) -> list[str]:
@@ -51,11 +62,13 @@ def _schema(
     schema: str,
     namespace: str,
     estimates: dict[tuple[str, str], tuple[int | None, int | None]],
+    skip: set[tuple[str, str]],
 ) -> list[DiscoveredTable]:
     kinds = {
         **{(schema, n): AssetKind.TABLE for n in insp.get_table_names(schema=schema)},
         **{(schema, n): AssetKind.VIEW for n in insp.get_view_names(schema=schema)},
     }
+    kinds = {k: v for k, v in kinds.items() if (k[0].lower(), k[1].lower()) not in skip}
     if not kinds:
         return []
     any_kind = ObjectKind.TABLE | ObjectKind.VIEW
