@@ -23,12 +23,13 @@ from ai_data_engineer.ingestion.base import (
     KeyRef,
     OrphanResult,
     OutlierResult,
+    PiiCounts,
     QueryStat,
     RuleResult,
     TableMeasurement,
 )
 from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.ingestion.sql import catalog, queries
+from ai_data_engineer.ingestion.sql import catalog, pii, queries
 from ai_data_engineer.ingestion.sql.dialects import call_timeout_hook, profile_for
 from ai_data_engineer.rules.spec import RuleSpec
 
@@ -153,3 +154,12 @@ class SqlAdapter:
     def db_health(self, limits: HealthLimits) -> HealthReading:
         """Not yet for these databases (Postgres first): an empty reading, nothing resolved."""
         return HealthReading(issues=[], checks_run=(), skipped={"all": "not implemented"})
+
+    # --- personal data (Stage 2.6) -------------------------------------------------------
+
+    def scan_pii(self, table: KeyRef, patterns: dict[str, str], sample_rows: int) -> PiiCounts:
+        """Raises ``RegexNotSupportedError`` on databases without regular expressions."""
+        if self.dialect.name not in pii.REGEX_DIALECTS:
+            raise pii.RegexNotSupportedError(f"no regular expressions on {self.dialect.name}")
+        with self.read_only() as conn:
+            return pii.count_pii(conn, table, patterns, sample_rows, self.dialect.name)

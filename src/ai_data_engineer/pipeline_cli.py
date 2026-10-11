@@ -14,8 +14,8 @@ def add_pipeline_parsers(
 ) -> None:
     p = subcommands.add_parser(
         "run",
-        help="the nightly job: scan, discover, rules, rows, dbhealth, detect, reconcile, "
-        "health, alert",
+        help="the nightly job: scan, discover, rules, rows, semantic, dbhealth, detect, "
+        "reconcile, health, alert",
     )
     p.add_argument("name", help="data source name")
     p.add_argument("--no-alert", action="store_true", help="do everything except alerting")

@@ -17,6 +17,7 @@ from ai_data_engineer.ingestion.base import (
     KeyRef,
     OrphanResult,
     OutlierResult,
+    PiiCounts,
     QueryStat,
     RuleResult,
     TableMeasurement,
@@ -25,6 +26,7 @@ from ai_data_engineer.ingestion.postgres import health, outliers, relationships,
 from ai_data_engineer.ingestion.postgres.catalog import read_activity, read_structure
 from ai_data_engineer.ingestion.postgres.profiling import run_profile
 from ai_data_engineer.ingestion.settings import ScanSettings
+from ai_data_engineer.ingestion.sql import pii
 from ai_data_engineer.rules.spec import RuleSpec
 
 # Shown in pg_stat_activity, so the customer's DBA can see (and identify) our queries.
@@ -148,3 +150,9 @@ class PostgresAdapter:
 
     def db_health(self, limits: HealthLimits) -> HealthReading:
         return health.run_readings(self.read_only, limits)
+
+    # --- personal data (Stage 2.6) -------------------------------------------------------
+
+    def scan_pii(self, table: KeyRef, patterns: dict[str, str], sample_rows: int) -> PiiCounts:
+        with self.read_only() as conn:
+            return pii.count_pii(conn, table, patterns, sample_rows, "postgresql")

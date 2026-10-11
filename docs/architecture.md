@@ -33,8 +33,9 @@ Customer DBs (Postgres, MySQL, MSSQL, Snowflake, …) — read-only
 | `detection` | Structural, column-value and time-series checks against each column's own history (robust statistics, cold-start safe), finding recording with dedup/resolve — see [design](design/detection.md); row-level outliers computed in-database ([design](design/row_outliers.md)) | 1.4–1.5, 2.5 | No |
 | `health_score` | Table/schema/source scores from open findings, stored as snapshots — see [design](design/lifecycle_health_alerts.md) | 1.6 | No |
 | `alerting` | One digest per run (Slack or console), quiet baseline, alert-once | 1.6 | No |
+| `semantic` | Personal-data map and PII in unexpected places, counted in-database — see [design](design/semantic_pii.md) | 2.6 | No |
 | `reconcile` | Source-vs-copy comparison from both sides' scans — see [design](design/stage3_databases.md) | 3 | No |
-| `pipeline` | `aide run`: scan → discover → rules → rows → dbhealth → detect → reconcile → health → alert | 1.6 | No |
+| `pipeline` | `aide run`: scan → discover → rules → rows → semantic → dbhealth → detect → reconcile → health → alert | 1.6 | No |
 | `rules` | Safe rule format, storage + human review, nightly checks compiled to read-only SQL — see [design](design/ai_rules.md) | 2 | No |
 | `reasoning` | LLM providers (Gemini first, switchable); privacy-safe context; rule proposals, second opinions on unsure relationships, guarded finding explanations ([design](design/ai_assist.md)); later root cause | 2, 6 | **Yes** (confidence + evidence; human-reviewed) |
 | `api` | FastAPI backend | 4 | — |

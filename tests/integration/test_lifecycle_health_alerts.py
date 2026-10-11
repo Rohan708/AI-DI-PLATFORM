@@ -238,7 +238,7 @@ def test_pipeline_stops_after_a_failed_scan(session: Session, source: DataSource
 
     assert not result.ok
     assert [s.step for s in result.steps] == ["scan"]
-    skipped = "skipped: discover, rules, rows, dbhealth, detect, reconcile, health, alert"
+    skipped = "skipped: discover, rules, rows, semantic, dbhealth, detect, reconcile, health, alert"
     assert skipped in result.summary()
     run = session.scalars(
         select(IngestionRun).where(IngestionRun.data_source_id == source.id)

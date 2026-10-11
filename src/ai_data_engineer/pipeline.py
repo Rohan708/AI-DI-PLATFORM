@@ -1,6 +1,7 @@
 """``aide run``: the whole nightly job for one source, in order:
 
-    scan -> discover -> rules -> rows -> dbhealth -> detect -> reconcile -> health -> alert
+    scan -> discover -> rules -> rows -> semantic -> dbhealth -> detect -> reconcile
+    -> health -> alert
 
 Each step commits on its own, so a later failure never loses earlier work. If the scan
 fails, the remaining steps are skipped (they would only re-judge yesterday's data). Every
@@ -24,12 +25,14 @@ from ai_data_engineer.health_score.engine import compute_health
 from ai_data_engineer.ingestion.scan import AdapterFactory, open_adapter, scan_source
 from ai_data_engineer.reconcile.run import pairs_of, reconcile
 from ai_data_engineer.rules.checks import check_rules
+from ai_data_engineer.semantic.run import check_semantic
 
 STEPS = (
     "scan",
     "discover",
     "rules",
     "rows",
+    "semantic",
     "dbhealth",
     "detect",
     "reconcile",
@@ -109,6 +112,12 @@ def run_pipeline(
     if not step(
         "rows",
         lambda: check_row_outliers(session, source, adapter_factory=adapter_factory).summary(),
+    ):
+        return result
+    # Personal data in unexpected places, counted inside the customer database (2.6).
+    if not step(
+        "semantic",
+        lambda: check_semantic(session, source, adapter_factory=adapter_factory).summary(),
     ):
         return result
     if not step(

@@ -101,6 +101,7 @@ Each scenario breaks something specific **and writes its own answer-key entry** 
 | `ship_before_order` | business rule | `shop.shipments.shipped_at` | 1% shipped two days *before* the order | 2 |
 | `invoice_total_mismatch` | business rule | `legacy.INV_HDR.TOTAL_AMT` | 1% of invoice totals inflated 10% over their lines | 2 |
 | `fat_finger_quantity` | row outlier | `shop.order_items.quantity` | 3 order lines get quantity 500 (normally 1–3) | 2.5 |
+| `emails_in_names` | semantic | `legacy.CUST_MASTER.CUST_NM` | 3% of legacy customers (at least 8) get their email address in the name field | 2.6 |
 
 Faults (`skipped_load`, `half_load`) are scheduled and happen on the **next** simulated day. Every entry records its `effective_day`: the first day whose scan should show the problem.
 

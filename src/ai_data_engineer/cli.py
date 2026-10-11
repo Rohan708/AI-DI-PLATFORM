@@ -52,6 +52,7 @@ from ai_data_engineer.reconcile.cli import add_reconcile_parser, run_reconcile_c
 from ai_data_engineer.reconcile.run import PairConfigError, PairNotFoundError
 from ai_data_engineer.rules.cli import add_rule_parsers, run_rule_command, run_rules_command
 from ai_data_engineer.rules.store import InvalidRuleError
+from ai_data_engineer.semantic.cli import add_semantic_parser, run_pii_command
 
 # Mistakes a user can make: reported as one line, not a traceback.
 USER_ERRORS = (
@@ -89,6 +90,7 @@ _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "rules": run_rules_command,
     "rule": run_rule_command,
     "reconcile": run_reconcile_command,
+    "pii": run_pii_command,
     "lab": run_lab_command,
 }
 
@@ -103,6 +105,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_detection_parsers(subcommands)
     add_rule_parsers(subcommands)
     add_reconcile_parser(subcommands)
+    add_semantic_parser(subcommands)
     add_lab_parser(subcommands)
 
     args = parser.parse_args(argv)

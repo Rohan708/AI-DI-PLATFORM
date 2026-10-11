@@ -121,6 +121,16 @@ class OutlierResult:
 
 
 @dataclass(frozen=True)
+class PiiCounts:
+    """Per text column of one table: non-NULL values checked, and how many look like each
+    kind of personal data. Counts only; no value ever comes back."""
+
+    rows_checked: int
+    non_null: dict[str, int]  # column -> non-NULL values among the rows checked
+    matches: dict[str, dict[str, int]]  # column -> kind -> values that match
+
+
+@dataclass(frozen=True)
 class HealthLimits:
     """Thresholds for database-health readings (see ``detection.dbhealth``)."""
 
@@ -191,6 +201,9 @@ class SourceAdapter(Protocol):
         min_spread: float,
         sample_size: int,
     ) -> OutlierResult: ...
+
+    # --- personal data (Stage 2.6): counts of values matching each pattern ------------
+    def scan_pii(self, table: KeyRef, patterns: dict[str, str], sample_rows: int) -> PiiCounts: ...
 
     # --- database health (Stage 3 add-on; adapters without it return an empty reading) ---
     def db_health(self, limits: HealthLimits) -> HealthReading: ...

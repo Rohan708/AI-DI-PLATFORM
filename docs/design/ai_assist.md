@@ -1,6 +1,6 @@
 # Design: AI relationship review and finding explanations (Stage 2.3–2.4)
 
-**Status:** ✅ tests pass (2026-10-11, fake LLM); first Gemini run pending.
+**Status:** ✅ tests pass and first Gemini run done (2026-10-11).
 **Builds on:** the provider switch and privacy rules of [ai_rules.md](ai_rules.md) (§5–6).
 **Code:** `reasoning/review_relationships.py`, `reasoning/explain.py`, `reasoning/replies.py`.
 
@@ -61,4 +61,4 @@ aide finding show ID              # includes the explanation
 ## 4. Results log
 | Date | Run | Relationship reviews | Explanations kept / rejected | Notes |
 |---|---|---|---|---|
-| | | | | |
+| 2026-10-11 | shopco4 (lab `standard`, small, seed 42), Gemini `gemini-2.5-flash` | 3 unsure links → **3 likely, all 3 true** (`orders.ship_addr`, `INV_LINE.ITEM_CD → products.sku`, `CUST_MASTER.EXT_REF → customers.customer_code`) | **3 / 0** | Explanations connect related findings correctly: duplicate phones ↔ duplicate emails (one planted cause); INV_LINE volume drop ↔ INV_HDR / INV_LINE_TAX drops (the half load). One plausible-but-wrong "possible cause" (the dropped primary key). Weakness: confidences cluster at 0.90-0.95, so they don't rank answers; human review stays the safeguard. |

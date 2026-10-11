@@ -34,6 +34,7 @@ from ai_data_engineer.ingestion.base import (
     KeyRef,
     OrphanResult,
     OutlierResult,
+    PiiCounts,
     QueryStat,
     RuleResult,
     TableMeasurement,
@@ -329,6 +330,9 @@ class _FailOn:
 
     def db_health(self, limits: HealthLimits) -> HealthReading:
         return self.inner.db_health(limits)
+
+    def scan_pii(self, table: KeyRef, patterns: dict[str, str], sample_rows: int) -> PiiCounts:
+        return self.inner.scan_pii(table, patterns, sample_rows)
 
     def profile(self, table: DiscoveredTable) -> TableMeasurement:
         if table.ref == self.ref:

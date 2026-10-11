@@ -137,6 +137,10 @@ Rules can only take three safe shapes: compare two columns (also across a relati
 
 **Unusual individual rows** ([design](../design/row_outliers.md)), with no AI involved: every night the database itself works out each amount or quantity column's typical value. It reports rows that are **both** at least 20× that **and** far outside the column's normal spread (*"3 rows in shop.order_items.quantity are far above normal (up to 500x the typical 1)"*), with their IDs. The values never leave the database.
 
+**Personal data in the wrong place** ([design](../design/semantic_pii.md)), with no AI involved. The database itself counts how many values in each text column look like email addresses, phone numbers, card numbers, IBANs, IP addresses or national IDs (US SSN, Indian PAN and Aadhaar). It never reads them out. The result:
+- a **map of where personal data lives** (`aide pii shopco`)
+- a **finding** when some turns up where the column's name doesn't say so: *"8 values in legacy.CUST_MASTER.CUST_NM look like email addresses"*. That's a copy that leaks through exports and gets missed by deletion requests.
+
 **Two more kinds of AI help** ([design](../design/ai_assist.md)), both advice only:
 - **Second opinion on unsure links.** When discovery is only "probably" sure two tables are linked (confidence 0.6–0.9), the AI looks at the same evidence a person would and says *likely*, *unlikely* or *unsure*, with a reason. It sorts your review list; it never confirms anything itself.
 - **Plain-language explanations.** `aide explain shopco` adds what a finding means, what it can break (connected tables), likely causes and what to check. Strict rule: **the explanation may only quote numbers that are in the evidence.** If the AI invents one (*"about 2,300 orders a week"*), the explanation is thrown away.
@@ -185,7 +189,8 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 1.5 | Detection, 12 checks | ✅ 11/11 caught |
 | 1.6 | Lifecycle, health score, alerts, `aide run` | ✅ lab: 0 false alarms, quiet nights silent |
 | 2.1–2.2 | AI proposes business rules (*"ship date must be after order date"*, *"invoice total = sum of lines"*); humans approve; the engine checks them as plain SQL | ✅ Gemini proposed 12 of 13 hidden rules; approved rules caught both planted problems |
-| 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ tests pass; first Gemini run pending |
+| 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ Gemini: 3/3 unsure links judged correctly, 3/3 explanations passed the number guard |
+| 2.6 | **Personal data map + PII in unexpected places** (counted inside the database) | code written, testing |
 | 2.5 | Unusual individual rows (*"3 order lines have quantity 500; normally 1–3"*), computed inside the database, IDs attached | ✅ caught on the lab, 0 false alarms |
 | 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
 | 4 | Product: web UI, API, accounts, self-hosted Docker package, onboarding | |

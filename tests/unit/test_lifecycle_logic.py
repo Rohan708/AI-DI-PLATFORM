@@ -104,7 +104,7 @@ def test_history_keeps_one_scan_per_day() -> None:
 def test_pipeline_result_reports_skipped_steps() -> None:
     result = PipelineResult("shopco", [StepOutcome("scan", False, "boom")])
     assert not result.ok
-    skipped = "skipped: discover, rules, rows, dbhealth, detect, reconcile, health, alert"
+    skipped = "skipped: discover, rules, rows, semantic, dbhealth, detect, reconcile, health, alert"
     assert skipped in result.summary()
     full = PipelineResult(
         "shopco",

@@ -31,6 +31,8 @@ INVOICE_MISMATCH_FACTOR = 1.1
 HALF_LOAD_VOLUME_FACTOR = 0.4
 FAT_FINGER_ROWS = 3  # order lines whose quantity was typed with extra zeros
 FAT_FINGER_QUANTITY = 500  # normal quantities are 1-3
+EMAILS_IN_NAMES_FRACTION = 0.03  # legacy customers whose name field got their email
+EMAILS_IN_NAMES_MIN_ROWS = 8  # enough to pass the check's 5-value floor in the tiny lab
 
 Apply = Callable[[Connection, LabState], list[ExpectedAnomaly]]
 
@@ -380,5 +382,32 @@ def fat_finger_quantity(conn: Connection, state: LabState) -> list[ExpectedAnoma
             "quantity", "row_outlier", "2",
             f"{affected} order lines got quantity {FAT_FINGER_QUANTITY} (normally 1-3)",
             {"rows": affected, "quantity": FAT_FINGER_QUANTITY},
+        )
+    ]  # fmt: skip
+
+
+# --- semantic / personal data (Stage 2.6) --------------------------------------------------
+
+
+@_scenario("emails_in_names", FindingCategory.SEMANTIC, "Customer emails typed into a name field")
+def emails_in_names(conn: Connection, state: LabState) -> list[ExpectedAnomaly]:
+    total = 'SELECT count(*) FROM legacy."CUST_MASTER"'
+    n = max(EMAILS_IN_NAMES_MIN_ROWS, _sample_size(conn, total, EMAILS_IN_NAMES_FRACTION))
+    affected = conn.execute(
+        text(
+            'UPDATE legacy."CUST_MASTER" m SET "CUST_NM" = left(c.email, 60) '
+            'FROM shop.customers c WHERE c.customer_code = m."EXT_REF" '
+            'AND c.email IS NOT NULL AND m."CUSTID" IN ('
+            'SELECT "CUSTID" FROM legacy."CUST_MASTER" WHERE "EXT_REF" IS NOT NULL '
+            'ORDER BY md5("CUSTID" || :salt) LIMIT :n)'
+        ),
+        {"salt": str(state.seed), "n": n},
+    ).rowcount
+    return [
+        _expect(
+            state, "emails_in_names", FindingCategory.SEMANTIC, "legacy.CUST_MASTER", "CUST_NM",
+            "pii_unexpected", "2.6",
+            f"{affected} legacy customers have their email address in the name field",
+            {"rows": affected},
         )
     ]  # fmt: skip

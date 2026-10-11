@@ -81,7 +81,7 @@ Use the read-only role and key-pair user from [`snowflake_setup.md`](snowflake_s
 
 `.env`:
 ```
-JAFFLE_SF_URL=snowflake://AIDE_SVC@<account>/JAFFLE_SHOP/PUBLIC?warehouse=AIDE_WH&role=AIDE_READONLY&private_key_file=C:/keys/aide_svc_key.p8
+JAFFLE_SF_URL=snowflake://AIDE_SVC@<account>/JAFFLE_DB?warehouse=AIDE_WH&role=AIDE_READONLY&private_key_file=C:/keys/aide_svc_key.p8
 ```
 **Read-only and timeouts:** read-only comes from the role. aide sets `STATEMENT_TIMEOUT_IN_SECONDS` per session. Queries run in your warehouse, so they cost credits; use an X-Small warehouse with auto-suspend.
 
