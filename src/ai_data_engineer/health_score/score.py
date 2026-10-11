@@ -42,15 +42,22 @@ def table_score(severities: Iterable[Severity]) -> Score:
     )
 
 
-def group_score(members: Sequence[Score]) -> Score:
-    """Average of the members, with the worst one kept; an empty group is perfectly healthy."""
+# How much a table counts in its schema's and source's average, by the importance people
+# gave it (Stage 2.7: 1 low, 2 normal, 3 critical). Normal tables count once.
+CRITICALITY_WEIGHT: dict[int, float] = {1: 0.5, 2: 1.0, 3: 2.0}
+
+
+def group_score(members: Sequence[Score], weights: Sequence[float] | None = None) -> Score:
+    """Weighted average of the members (equal weights by default), with the worst one
+    kept; an empty group is perfectly healthy."""
     if not members:
         return Score(score=MAX_SCORE, min_child=None)
+    w = list(weights) if weights is not None else [1.0] * len(members)
     totals: Counter[str] = Counter()
     for m in members:
         totals.update(m.open_findings)
     return Score(
-        score=round(sum(m.score for m in members) / len(members), 1),
+        score=round(sum(m.score * x for m, x in zip(members, w, strict=True)) / sum(w), 1),
         open_findings=dict(sorted(totals.items())),
         min_child=min(m.score for m in members),
     )

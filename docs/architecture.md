@@ -33,6 +33,7 @@ Customer DBs (Postgres, MySQL, MSSQL, Snowflake, …) — read-only
 | `detection` | Structural, column-value and time-series checks against each column's own history (robust statistics, cold-start safe), finding recording with dedup/resolve — see [design](design/detection.md); row-level outliers computed in-database ([design](design/row_outliers.md)) | 1.4–1.5, 2.5 | No |
 | `health_score` | Table/schema/source scores from open findings, stored as snapshots — see [design](design/lifecycle_health_alerts.md) | 1.6 | No |
 | `alerting` | One digest per run (Slack or console), quiet baseline, alert-once | 1.6 | No |
+| `context` | Questions the engine asks, what people answer (descriptions, importance, deadlines, closed days), dbt import — see [design](design/context.md) | 2.7 | No |
 | `semantic` | Personal-data map and PII in unexpected places, counted in-database — see [design](design/semantic_pii.md) | 2.6 | No |
 | `reconcile` | Source-vs-copy comparison from both sides' scans — see [design](design/stage3_databases.md) | 3 | No |
 | `pipeline` | `aide run`: scan → discover → rules → rows → semantic → dbhealth → detect → reconcile → health → alert | 1.6 | No |

@@ -149,7 +149,28 @@ Rules can only take three safe shapes: compare two columns (also across a relati
 
 ---
 
-## 7. More databases, copies, and the database itself (Stage 3)
+## 7. Tell it what the database means (Stage 2.7)
+*Design: [context.md](../design/context.md)*
+
+The engine learns what the data *does*. Only the people who own it know what it's *meant* to do. So the engine asks, but only a few questions, each pre-filled with its best guess (`aide ask mydb`):
+
+- *"`shop.addresses.postal_code` is never empty today, but the database allows it. Must it always be filled?"* yes
+- *"`shop.addresses.country` has these values today: CA, DE, GB, US. Is that the full list?"* yes
+- *"Is the business closed on some weekdays?"* sun
+- *"How many hours may `reporting.daily_sales` go without new rows before it's late?"* 26
+- *"How important is `shop.payments`?"* 3 (critical)
+
+**What the answers buy:**
+- **Checks from day one.** "Must be filled" and "only these values" run as plain SQL every night, with no week of learning first. On the lab, two answers caught two planted problems on the first scan.
+- **Fewer false alarms.** No volume or deadline alarms on days you're closed.
+- **Smarter priorities.** Problems on critical tables weigh double in the health score.
+- **Better AI and docs.** Your descriptions go into rule proposals, explanations and the data dictionary.
+
+**Already documented in dbt?** `aide context import-dbt mydb schema.yml` brings in descriptions, `not_null` / `unique` / `accepted_values` tests and relationships, so nobody types them twice.
+
+---
+
+## 8. More databases, copies, and the database itself (Stage 3)
 *Design: [stage3_databases.md](../design/stage3_databases.md) · setup: [databases.md](../setup/databases.md)*
 
 - **Any SQL database.** MySQL, SQL Server, Oracle and Snowflake share one adapter. A small table of per-database differences covers how to make the session read-only, where the row estimates and the query log live, and three function names. Everything above the adapter (discovery, detection, rules, outliers, alerts) is the same engine.
@@ -190,7 +211,8 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 1.6 | Lifecycle, health score, alerts, `aide run` | ✅ lab: 0 false alarms, quiet nights silent |
 | 2.1–2.2 | AI proposes business rules (*"ship date must be after order date"*, *"invoice total = sum of lines"*); humans approve; the engine checks them as plain SQL | ✅ Gemini proposed 12 of 13 hidden rules; approved rules caught both planted problems |
 | 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ Gemini: 3/3 unsure links judged correctly, 3/3 explanations passed the number guard |
-| 2.6 | **Personal data map + PII in unexpected places** (counted inside the database) | code written, testing |
+| 2.6 | Personal data map + PII in unexpected places (counted inside the database) | ✅ lab: planted emails found, 0 false alarms |
+| 2.7 | **The engine asks questions; answers become checks** (required, unique, allowed values, deadlines, closed days, importance); dbt import | ✅ lab: day-one detection of 2 planted problems |
 | 2.5 | Unusual individual rows (*"3 order lines have quantity 500; normally 1–3"*), computed inside the database, IDs attached | ✅ caught on the lab, 0 false alarms |
 | 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
 | 4 | Product: web UI, API, accounts, self-hosted Docker package, onboarding | |

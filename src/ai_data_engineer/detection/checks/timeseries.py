@@ -4,15 +4,18 @@ import math
 import re
 import uuid
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from itertools import pairwise
 from statistics import median
 
 from ai_data_engineer.detection.context import DetectionContext, fingerprint
 from ai_data_engineer.detection.framework import Check, CheckOutput, Observation
 from ai_data_engineer.graph.models import AssetProfile, FindingCategory, TypeFamily
+from ai_data_engineer.reconcile.compare import comparable
 
 VOLUME_DROP = "volume_drop"
 STALE_TABLE = "stale_table"
+FRESHNESS_DEADLINE = "freshness_deadline"
 
 TIME_FAMILIES = (TypeFamily.TIMESTAMP, TypeFamily.DATE)
 
@@ -35,8 +38,8 @@ def volume_drop(ctx: DetectionContext) -> CheckOutput:
     s, out = ctx.settings, CheckOutput()
     for table in ctx.catalog.tables.values():
         history, current = ctx.asset_series(table.asset_key)
-        if current is None:
-            continue
+        if current is None or ctx.is_closed_day(current.measured_at):
+            continue  # nothing to judge, or a day the business is closed (no data expected)
         series = [*history, current]
         if any(p.row_count is None or p.row_count_is_estimate for p in series):
             continue
@@ -50,6 +53,9 @@ def volume_drop(ctx: DetectionContext) -> CheckOutput:
             continue
         if any(d < 0 for _, d in past):
             continue  # tables that shrink (full refreshes, purges) aren't append-like
+        past = [(p, d) for p, d in past if not ctx.is_closed_day(p.measured_at)]
+        if not past:
+            continue
         baseline_values, basis = volume_baseline(
             [(p.measured_at.weekday(), d) for p, d in past],
             current.measured_at.weekday(),
@@ -99,6 +105,9 @@ def stale_table(ctx: DetectionContext) -> CheckOutput:
     advance this time: the job that fills it probably didn't run."""
     s, out = ctx.settings, CheckOutput()
     for table in ctx.catalog.tables.values():
+        _, this_scan = ctx.asset_series(table.asset_key)
+        if this_scan is not None and ctx.is_closed_day(this_scan.measured_at):
+            continue  # nothing new is expected on a closed day
         best: _Clock | None = None
         enough = False
         for column in table.columns.values():
@@ -228,7 +237,77 @@ def _deltas(series: list[AssetProfile]) -> list[tuple[AssetProfile, int]]:
     return [(cur, (cur.row_count or 0) - (prev.row_count or 0)) for prev, cur in pairwise(series)]
 
 
+def freshness_deadline(ctx: DetectionContext) -> CheckOutput:
+    """A table people gave a deadline (``aide ask`` / ``context set --deadline``) went
+    longer than that without new rows. Works from the first scan: no history needed.
+    Closed weekdays between the newest row and the scan don't count against it."""
+    s, out = ctx.settings, CheckOutput()
+    for asset_key, (column_name, max_hours) in ctx.people.freshness.items():
+        table = next((t for t in ctx.catalog.tables.values() if t.asset_key == asset_key), None)
+        column = table.columns.get(column_name) if table else None
+        if table is None or column is None:
+            continue
+        _, current = ctx.column_series(column.column_key)
+        newest = _moment(current.max_repr) if current else None
+        if current is None or newest is None:
+            continue
+        fp = fingerprint(FRESHNESS_DEADLINE, asset_key)
+        out.evaluated.add(fp)
+        scanned = current.measured_at.astimezone(UTC).replace(tzinfo=None)
+        closed = _closed_days_between(newest, scanned, ctx.people.closed_weekdays)
+        age = (scanned - newest).total_seconds() / 3600 - 24 * closed
+        if age <= max_hours:
+            continue
+        out.observations.append(
+            Observation(
+                fingerprint=fp,
+                category=FindingCategory.TIME_SERIES,
+                severity=s.severity_freshness_deadline,
+                title=(
+                    f"{table.ref} is late: newest {column_name} is {age:,.0f} h old "
+                    f"(deadline {max_hours:g} h)"
+                ),
+                description=(
+                    f"The newest {table.ref}.{column_name} is {current.max_repr}, {age:,.0f} "
+                    f"hours before the scan"
+                    + (f" (not counting {closed} closed days)" if closed else "")
+                    + f". People set a deadline of {max_hours:g} hours for this table."
+                ),
+                evidence={
+                    "column": column_name,
+                    "newest_value": current.max_repr,
+                    "age_hours": round(age, 1),
+                    "deadline_hours": max_hours,
+                    "closed_days_skipped": closed,
+                },
+                asset_key=asset_key,
+                column_key=column.column_key,
+            )
+        )
+    return out
+
+
+def _moment(value: str | None) -> datetime | None:
+    """A measured time as a naive UTC datetime (the same reading reconciliation uses)."""
+    found = comparable(value, TypeFamily.TIMESTAMP)
+    return found if isinstance(found, datetime) else None
+
+
+def _closed_days_between(start: datetime, end: datetime, closed: frozenset[int]) -> int:
+    """Closed weekdays strictly after ``start``'s date, up to and including ``end``'s."""
+    if not closed or end <= start:
+        return 0
+    days, day = 0, start.date() + timedelta(days=1)
+    while day <= end.date():
+        days += day.weekday() in closed
+        day += timedelta(days=1)
+    return days
+
+
 CHECKS = [
     Check(VOLUME_DROP, "condition", "far fewer new rows than usual", volume_drop),
     Check(STALE_TABLE, "condition", "a regularly updated table stopped updating", stale_table),
+    Check(
+        FRESHNESS_DEADLINE, "condition", "later than the deadline people set", freshness_deadline
+    ),
 ]

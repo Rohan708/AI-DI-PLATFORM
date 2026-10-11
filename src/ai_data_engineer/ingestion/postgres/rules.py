@@ -9,10 +9,13 @@ from sqlalchemy import Connection, text
 from ai_data_engineer.ingestion.base import RuleResult
 from ai_data_engineer.ingestion.postgres.profiling import SAMPLE_SEED, quote_ident
 from ai_data_engineer.rules.spec import (
+    AllowedValues,
     CompareColumns,
     CompareConstant,
+    NotNull,
     RuleSpec,
     SumMatches,
+    Unique,
     Via,
 )
 
@@ -91,6 +94,21 @@ def compile_rule(spec: RuleSpec, base: str) -> _Query:
             judged = f"{col} IS NOT NULL AND s.n > 0"  # a parent without children isn't judged
             broken = f"{judged} AND abs({col} - s.total) > CAST(:tolerance AS numeric)"
             return _Query(source, judged, broken, {"tolerance": spec.tolerance})
+        case NotNull():
+            return _Query(base, "true", f"{col} IS NULL")
+        case Unique():
+            # Rows whose value another row also has (counted over the whole table).
+            c = quote_ident(spec.column)
+            shared = (
+                f"SELECT u.{c} FROM {_qualified(spec.table)} AS u "  # noqa: S608
+                f"WHERE u.{c} IS NOT NULL GROUP BY u.{c} HAVING count(*) > 1"
+            )
+            judged = f"{col} IS NOT NULL"
+            return _Query(base, judged, f"{judged} AND {col} IN ({shared})")
+        case AllowedValues():
+            judged = f"{col} IS NOT NULL"
+            broken = f"{judged} AND NOT ({col}::text = ANY(CAST(:allowed AS text[])))"
+            return _Query(base, judged, broken, {"allowed": list(spec.values)})
     raise AssertionError(spec)  # pragma: no cover
 
 

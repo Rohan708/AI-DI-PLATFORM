@@ -8,6 +8,7 @@ from ai_data_engineer.graph.models.assets import (
     AssetVersion,
 )
 from ai_data_engineer.graph.models.base import Base, StrEnumType, utcnow
+from ai_data_engineer.graph.models.context import ContextNote, QuestionAnswer
 from ai_data_engineer.graph.models.enums import (
     ACTIVE_FINDING_STATUSES,
     AssetKind,
@@ -46,6 +47,7 @@ __all__ = [
     "AssetVersion",
     "Base",
     "ColumnProfile",
+    "ContextNote",
     "DataSource",
     "Finding",
     "FindingCategory",
@@ -56,6 +58,7 @@ __all__ = [
     "IngestionRun",
     "Origin",
     "QueryJoin",
+    "QuestionAnswer",
     "ReconciliationPair",
     "Relationship",
     "RelationshipColumn",

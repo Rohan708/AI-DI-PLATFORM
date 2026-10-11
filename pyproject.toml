@@ -16,6 +16,7 @@ dependencies = [
     "pydantic-settings>=2.3,<3",
     "python-dotenv>=1.0,<2",
     "sqlglot>=25",
+    "pyyaml>=6",  # dbt schema.yml import (Stage 2.7)
 ]
 
 [project.optional-dependencies]
@@ -30,6 +31,7 @@ dev = [
     "faker>=30",
     "pymysql>=1.1",
     "pytest>=8.2",
+    "types-PyYAML",
     "testcontainers[postgres,mysql]>=4.15",
     "ruff>=0.6",
     "mypy>=1.11",
@@ -92,7 +94,7 @@ ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 # Builds SQLAlchemy dialects and dialect types directly; their constructors are untyped.
-module = ["test_sql_dialect_logic"]
+module = ["test_sql_dialect_logic", "test_context_logic"]
 disallow_untyped_calls = false
 
 # ---------------------------------------------------------------------------

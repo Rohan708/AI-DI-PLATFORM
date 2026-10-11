@@ -34,6 +34,10 @@ class ColumnInfo:
     avg_length: float | None = None
     min_repr: str | None = None
     max_repr: str | None = None
+    is_nullable: bool = True  # as declared in the database
+    # The column's frequent values at the latest scan (low-cardinality columns, when the
+    # source allows storing values); None = not collected.
+    top_values: tuple[str, ...] | None = None
 
     @property
     def non_null(self) -> int | None:
@@ -118,6 +122,12 @@ def load_catalog(session: Session, source: DataSource) -> Catalog:
                 avg_length=p.avg_length if p else None,
                 min_repr=p.min_repr if p else None,
                 max_repr=p.max_repr if p else None,
+                is_nullable=column.is_nullable,
+                top_values=(
+                    tuple(str(v["value"]) for v in p.top_values if v.get("value") is not None)
+                    if p and p.top_values is not None
+                    else None
+                ),
             )
         latest = get_asset_profile_history(session, asset.asset_key, limit=1)
         table = TableInfo(

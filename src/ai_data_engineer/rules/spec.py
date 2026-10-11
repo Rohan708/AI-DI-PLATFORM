@@ -28,6 +28,8 @@ Op = Literal["<", "<=", "=", ">=", ">", "<>"]
 
 NUMERIC = frozenset({TypeFamily.INTEGER, TypeFamily.DECIMAL, TypeFamily.FLOAT})
 TEMPORAL = frozenset({TypeFamily.DATE, TypeFamily.TIMESTAMP})
+# Families whose values a person can list (allowed values are compared as text).
+LISTABLE = frozenset({TypeFamily.STRING, TypeFamily.INTEGER, TypeFamily.BOOLEAN})
 
 
 class _Spec(BaseModel):
@@ -68,9 +70,41 @@ class SumMatches(_Spec):
     tolerance: float = Field(default=0.01, ge=0)  # rounding
 
 
-RuleSpec = Annotated[CompareColumns | CompareConstant | SumMatches, Field(discriminator="kind")]
+class NotNull(_Spec):
+    """Every row has a value (Stage 2.7: "must this column always be filled?")."""
+
+    kind: Literal["not_null"] = "not_null"
+    table: str
+    column: str
+
+
+class Unique(_Spec):
+    """No two rows share a value (NULLs aside)."""
+
+    kind: Literal["unique"] = "unique"
+    table: str
+    column: str
+
+
+class AllowedValues(_Spec):
+    """Every value is one of a list a person gave (NULLs aside)."""
+
+    kind: Literal["allowed_values"] = "allowed_values"
+    table: str
+    column: str
+    values: list[str] = Field(min_length=1, max_length=500)
+
+
+RuleSpec = Annotated[
+    CompareColumns | CompareConstant | SumMatches | NotNull | Unique | AllowedValues,
+    Field(discriminator="kind"),
+]
 RULE_SPEC: TypeAdapter[RuleSpec] = TypeAdapter(RuleSpec)
-RULE_KINDS = ("compare_columns", "compare_constant", "sum_matches")
+RULE_KINDS = (
+    "compare_columns", "compare_constant", "sum_matches", "not_null", "unique", "allowed_values",
+)  # fmt: skip
+# Kinds the AI may propose (the others come from people: aide ask, rules add, dbt).
+AI_RULE_KINDS = ("compare_columns", "compare_constant", "sum_matches")
 
 # A known relationship, as (child table, child columns, parent table, parent columns).
 Link = tuple[str, tuple[str, ...], str, tuple[str, ...]]
@@ -110,6 +144,13 @@ def describe(spec: RuleSpec) -> str:
                 f"{spec.table}.{spec.column} = sum({spec.child_table}.{spec.child_column})"
                 f" (via {joins}, tolerance {spec.tolerance:g})"
             )
+        case NotNull():
+            return f"{spec.table}.{spec.column} is always filled"
+        case Unique():
+            return f"{spec.table}.{spec.column} is unique"
+        case AllowedValues():
+            shown = ", ".join(spec.values[:8]) + (", ..." if len(spec.values) > 8 else "")
+            return f"{spec.table}.{spec.column} in ({shown})"
     raise AssertionError(spec)  # pragma: no cover
 
 
@@ -148,6 +189,11 @@ def validate(spec: RuleSpec, catalog: Catalog, links: list[Link] | None = None) 
                 for c in (column, summed):
                     if c is not None and c.family not in NUMERIC:
                         problems.append(f"{c.name} is not numeric")
+        case AllowedValues():
+            if column is not None and column.family not in LISTABLE:
+                problems.append(f"{spec.table}.{spec.column} can't hold a list of values")
+        case NotNull() | Unique():
+            pass
     return problems
 
 

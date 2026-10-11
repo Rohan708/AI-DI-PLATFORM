@@ -8,6 +8,7 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ai_data_engineer.context.store import load_context
 from ai_data_engineer.detection.recording import latest_run_id
 from ai_data_engineer.discovery.catalog import load_catalog
 from ai_data_engineer.graph.models import (
@@ -20,7 +21,12 @@ from ai_data_engineer.graph.models import (
     Severity,
     utcnow,
 )
-from ai_data_engineer.health_score.score import Score, group_score, table_score
+from ai_data_engineer.health_score.score import (
+    CRITICALITY_WEIGHT,
+    Score,
+    group_score,
+    table_score,
+)
 
 
 @dataclass
@@ -87,15 +93,23 @@ def compute_health(
     run_id = latest_run_id(session, source)
     tables: list[TableHealth] = []
     by_schema: dict[str, list[Score]] = defaultdict(list)
+    schema_weights: dict[str, list[float]] = defaultdict(list)
+    weights: list[float] = []
+    people = load_context(session, source)
     for table in catalog.tables.values():
         s = table_score(severities.get(table.asset_key, []))
+        weight = CRITICALITY_WEIGHT[people.level(table.asset_key)]
         tables.append(TableHealth(table.ref, table.asset_key, s))
         by_schema[table.schema_name].append(s)
+        schema_weights[table.schema_name].append(weight)
+        weights.append(weight)
         _store(session, source, run_id, now, HealthScope.ASSET, s, asset_key=table.asset_key)
-    schemas = {name: group_score(scores) for name, scores in by_schema.items()}
+    schemas = {
+        name: group_score(scores, schema_weights[name]) for name, scores in by_schema.items()
+    }
     for name, s in schemas.items():
         _store(session, source, run_id, now, HealthScope.SCHEMA, s, schema_name=name)
-    overall = group_score([t.score for t in tables])
+    overall = group_score([t.score for t in tables], weights)
     _store(session, source, run_id, now, HealthScope.SOURCE, overall)
     session.flush()
 

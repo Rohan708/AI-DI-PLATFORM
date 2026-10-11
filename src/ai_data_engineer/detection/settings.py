@@ -43,6 +43,9 @@ class DetectionSettings:
     # the previous one: a second run on the same day would otherwise see "0 new rows" and
     # "nothing moved" everywhere.
     time_series_min_gap_hours: float = 20.0
+    # Which business day a scan covers: the day this many hours before it (a 03:00 scan
+    # covers yesterday). Used with the closed weekdays people tell us about (2.7).
+    closed_day_offset_hours: float = 12.0
 
     # --- row-level outliers (Stage 2.5, computed inside the customer database) -----------
     # A row is an outlier if its value is far above the column's median on a log scale:
@@ -67,6 +70,7 @@ class DetectionSettings:
     severity_volume_drop: Severity = Severity.HIGH
     severity_stale: Severity = Severity.HIGH
     severity_row_outlier: Severity = Severity.MEDIUM
+    severity_freshness_deadline: Severity = Severity.HIGH
 
 
 DEFAULT_DETECTION_SETTINGS = DetectionSettings()

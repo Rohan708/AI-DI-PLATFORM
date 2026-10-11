@@ -20,8 +20,10 @@ from sqlalchemy import (
     Connection,
     FromClause,
     Select,
+    String,
     and_,
     case,
+    cast,
     column,
     distinct,
     exists,
@@ -45,10 +47,13 @@ from ai_data_engineer.ingestion.base import (
 from ai_data_engineer.ingestion.settings import ScanSettings
 from ai_data_engineer.ingestion.sql.dialects import DialectProfile
 from ai_data_engineer.rules.spec import (
+    AllowedValues,
     CompareColumns,
     CompareConstant,
+    NotNull,
     RuleSpec,
     SumMatches,
+    Unique,
     Via,
 )
 
@@ -270,6 +275,9 @@ def rule_rows(spec: RuleSpec, row_ids: tuple[str, ...]) -> tuple[Select[Any], tu
             children = select(func.count()).select_from(c).where(linked).scalar_subquery()
             values = [t.c[spec.column].label(_LEFT), total.label(_TOTAL), children.label(_COUNT)]
             source = t
+        case NotNull() | Unique() | AllowedValues():
+            t = ref_table(spec.table, (spec.column, *row_ids))
+            values, source = [t.c[spec.column].label(_LEFT)], t
     labels = tuple(f"aide_id_{i}" for i in range(len(row_ids)))
     ids = [t.c[r].label(label) for r, label in zip(row_ids, labels, strict=True)]
     return select(*values, *ids).select_from(source), labels
@@ -290,6 +298,23 @@ def rule_conditions(spec: RuleSpec, s: Any) -> tuple[ColumnElement[bool], Column
             judged = and_(left.is_not(None), s.c[_COUNT] > 0)
             gap = func.abs(left - s.c[_TOTAL])
             return judged, and_(judged, gap > literal(spec.tolerance))
+        case NotNull():
+            return literal(1) == literal(1), left.is_(None)
+        case Unique():
+            u = ref_table(spec.table, (spec.column,)).alias("u")
+            shared = (
+                select(u.c[spec.column])
+                .where(u.c[spec.column].is_not(None))
+                .group_by(u.c[spec.column])
+                .having(func.count() > 1)
+            )
+            judged = left.is_not(None)
+            return judged, and_(judged, left.in_(shared))
+        case AllowedValues():
+            # Compared as trimmed text: values came from this database's own profile.
+            as_string = func.trim(cast(left, String(4000)))
+            judged = left.is_not(None)
+            return judged, and_(judged, as_string.not_in(list(spec.values)))
     raise AssertionError(spec)  # pragma: no cover
 
 

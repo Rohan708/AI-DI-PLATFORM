@@ -12,11 +12,13 @@ from ai_data_engineer.graph.models import (
     AssetProfile,
     AssetVersion,
     ColumnProfile,
+    ContextNote,
     DataSource,
     Finding,
     HealthSnapshot,
     IngestionRun,
     QueryJoin,
+    QuestionAnswer,
     ReconciliationPair,
     Relationship,
     Rule,
@@ -109,6 +111,11 @@ def remove_source(session: Session, source: DataSource) -> dict[str, int]:
                     ReconciliationPair.right_source_id == source.id,
                 )
             ),
+        ),
+        ("context_note", delete(ContextNote).where(ContextNote.data_source_id == source.id)),
+        (
+            "question_answer",
+            delete(QuestionAnswer).where(QuestionAnswer.data_source_id == source.id),
         ),
         ("finding", delete(Finding).where(Finding.data_source_id == source.id)),
         (

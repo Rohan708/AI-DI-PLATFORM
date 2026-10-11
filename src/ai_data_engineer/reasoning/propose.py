@@ -18,13 +18,20 @@ from typing import Any
 from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
+from ai_data_engineer.context.store import load_context
 from ai_data_engineer.discovery.catalog import load_catalog
 from ai_data_engineer.graph.models import DataSource, Origin, Rule, RuleStatus, utcnow
 from ai_data_engineer.reasoning.context import schema_context
 from ai_data_engineer.reasoning.llm import LLMClient
 from ai_data_engineer.reasoning.replies import confidence_of, items_of, parse_json_reply
 from ai_data_engineer.rules.settings import DEFAULT_RULE_SETTINGS, RuleSettings
-from ai_data_engineer.rules.spec import describe, parse_spec, signature, validate
+from ai_data_engineer.rules.spec import (
+    AI_RULE_KINDS,
+    describe,
+    parse_spec,
+    signature,
+    validate,
+)
 from ai_data_engineer.rules.store import (
     known_relationships,
     rule_with_signature,
@@ -121,7 +128,7 @@ def propose_rules(
     catalog = load_catalog(session, source)
     relationships = known_relationships(session, catalog)
     links = [link for link, _, _ in relationships]
-    context = schema_context(catalog, relationships, settings)
+    context = schema_context(catalog, relationships, settings, load_context(session, source))
     context["existing_rules"] = [
         {"rule": r.name, "status": r.status.value} for r in rules_of(session, source)
     ]
@@ -141,6 +148,9 @@ def propose_rules(
             spec = parse_spec(raw)
         except ValidationError as exc:
             result.invalid.append(f"{_short(raw)}: {exc.errors()[0]['msg']}")
+            continue
+        if spec.kind not in AI_RULE_KINDS:  # required/unique/allowed come from people
+            result.invalid.append(f"{describe(spec)}: not a kind the AI proposes")
             continue
         problems = validate(spec, catalog, links)
         if problems:

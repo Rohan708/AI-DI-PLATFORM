@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ai_data_engineer.context.store import SourceContext, load_context
 from ai_data_engineer.detection.settings import DetectionSettings
 from ai_data_engineer.discovery.catalog import Catalog, load_catalog
 from ai_data_engineer.discovery.store import current_relationships
@@ -39,6 +40,14 @@ class DetectionContext:
     asset_profiles: dict[uuid.UUID, list[AssetProfile]] = field(default_factory=dict)
     column_profiles: dict[uuid.UUID, list[ColumnProfile]] = field(default_factory=dict)
     relationships: list[Relationship] = field(default_factory=list)
+    people: SourceContext = field(default_factory=SourceContext)  # what people told us
+
+    def is_closed_day(self, measured_at: datetime) -> bool:
+        """The scan covers a weekday the business is closed (no data expected)."""
+        if not self.people.closed_weekdays:
+            return False
+        covered = measured_at - timedelta(hours=self.settings.closed_day_offset_hours)
+        return covered.weekday() in self.people.closed_weekdays
 
     @property
     def event_since(self) -> datetime:
@@ -123,4 +132,5 @@ def build_context(
     ctx.asset_profiles = dict(assets)
     ctx.column_profiles = dict(columns)
     ctx.relationships = current_relationships(session, ctx.catalog)
+    ctx.people = load_context(session, source)
     return ctx

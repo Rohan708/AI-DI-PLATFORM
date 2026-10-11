@@ -24,6 +24,8 @@ EXPECTED_TABLES = {
     "finding_event",
     "health_snapshot",
     "reconciliation_pair",
+    "context_note",
+    "question_answer",
 }
 
 

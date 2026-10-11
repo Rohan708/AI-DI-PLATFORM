@@ -26,6 +26,7 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from ai_data_engineer.context.store import load_context
 from ai_data_engineer.detection.recording import SYSTEM_ACTOR
 from ai_data_engineer.discovery.catalog import Catalog, TableInfo, load_catalog
 from ai_data_engineer.graph.models import (
@@ -151,6 +152,13 @@ def finding_context(
     if table is None:
         return context
     context["table"] = _table(table, finding)
+    said = load_context(session, catalog.source).descriptions
+    if (table.asset_key, None) in said:
+        context["table"]["description"] = said[(table.asset_key, None)]
+    if finding.column_key and (table.asset_key, finding.column_key) in said:
+        context["table"].setdefault("column", {})["description"] = said[
+            (table.asset_key, finding.column_key)
+        ]
     connected: set[str] = set()
     links = []
     for (child, child_cols, parent, parent_cols), status, _ in known_relationships(

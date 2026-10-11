@@ -14,6 +14,7 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
+from ai_data_engineer.context.store import CRITICALITY_LEVELS, SourceContext, load_context
 from ai_data_engineer.discovery.catalog import Catalog, TableInfo, load_catalog
 from ai_data_engineer.discovery.store import current_relationships
 from ai_data_engineer.graph.models import (
@@ -54,7 +55,7 @@ def generate_docs(
     out.mkdir(parents=True, exist_ok=True)
     files = {
         "README.md": _overview(catalog, links),
-        "data_dictionary.md": _dictionary(session, catalog, links),
+        "data_dictionary.md": _dictionary(session, catalog, links, load_context(session, source)),
         "relationships.md": _relationships(links),
     }
     paths = []
@@ -130,17 +131,26 @@ def _overview(catalog: Catalog, links: list[Link]) -> str:
     return "\n".join(out)
 
 
-def _dictionary(session: Session, catalog: Catalog, links: list[Link]) -> str:
+def _dictionary(
+    session: Session, catalog: Catalog, links: list[Link], people: SourceContext
+) -> str:
     out = [f"# {catalog.source.name}: data dictionary", ""]
+    about = people.descriptions.get((None, None))
+    if about:
+        out += [about, ""]
     for table in sorted(catalog.tables.values(), key=lambda t: t.ref):
         rows = f"{table.estimated_rows:,}" if table.estimated_rows is not None else "?"
         pk = ", ".join(table.primary_key) or "**none**"
-        out += [
-            f"## `{table.ref}`",
-            "",
-            f"- **Rows (latest scan):** {rows}",
-            f"- **Primary key:** {pk}",
-        ]
+        described = people.descriptions.get((table.asset_key, None))
+        out += (
+            [f"## `{table.ref}`", ""]
+            + ([described, ""] if described else [])
+            + [
+                f"- **Rows (latest scan):** {rows}",
+                f"- **Primary key:** {pk}",
+                f"- **Importance:** {CRITICALITY_LEVELS[people.level(table.asset_key)]}",
+            ]
+        )
         outgoing = [link for link in links if link.child is table]
         incoming = [link for link in links if link.parent is table]
         refs = ", ".join(f"`{link.parent.ref}` via {link.label}" for link in outgoing)
@@ -149,8 +159,8 @@ def _dictionary(session: Session, catalog: Catalog, links: list[Link]) -> str:
             "- **References:** " + (refs or "none"),
             "- **Referenced by:** " + (referenced_by or "none"),
             "",
-            "| Column | Type | Has nulls | Null % | Distinct | Top values |",
-            "|---|---|---|---|---|---|",
+            "| Column | Description | Type | Has nulls | Null % | Distinct | Top values |",
+            "|---|---|---|---|---|---|---|",
         ]
         for column in table.columns.values():
             null_pct = (
@@ -159,8 +169,9 @@ def _dictionary(session: Session, catalog: Catalog, links: list[Link]) -> str:
                 else "-"
             )
             distinct = f"{column.distinct_count:,}" if column.distinct_count is not None else "-"
+            meaning = people.descriptions.get((table.asset_key, column.column_key), "")
             out.append(
-                f"| {column.name} | {column.native_type} | "
+                f"| {column.name} | {meaning.replace('|', '/')} | {column.native_type} | "
                 f"{'yes' if column.null_count else 'no'} | {null_pct} | {distinct} | "
                 f"{_top_values(session, column.column_key)} |"
             )

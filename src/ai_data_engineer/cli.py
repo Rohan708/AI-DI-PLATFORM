@@ -14,6 +14,15 @@ from collections.abc import Callable, Sequence
 from pydantic import ValidationError
 
 from ai_data_engineer import __version__
+from ai_data_engineer.context.cli import (
+    add_context_parsers,
+    run_answer_command,
+    run_ask_command,
+    run_context_command,
+    run_questions_command,
+)
+from ai_data_engineer.context.questions import AnswerError
+from ai_data_engineer.context.store import ContextError
 from ai_data_engineer.detection.cli import (
     add_detection_parsers,
     run_dbhealth_command,
@@ -68,6 +77,8 @@ USER_ERRORS = (
     LLMError,
     PairNotFoundError,
     PairConfigError,
+    ContextError,
+    AnswerError,
     json.JSONDecodeError,
     ValidationError,
     LookupError,
@@ -91,6 +102,10 @@ _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "rule": run_rule_command,
     "reconcile": run_reconcile_command,
     "pii": run_pii_command,
+    "ask": run_ask_command,
+    "questions": run_questions_command,
+    "answer": run_answer_command,
+    "context": run_context_command,
     "lab": run_lab_command,
 }
 
@@ -106,6 +121,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_rule_parsers(subcommands)
     add_reconcile_parser(subcommands)
     add_semantic_parser(subcommands)
+    add_context_parsers(subcommands)
     add_lab_parser(subcommands)
 
     args = parser.parse_args(argv)

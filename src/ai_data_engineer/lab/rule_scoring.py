@@ -17,7 +17,6 @@ from ai_data_engineer.graph.models import Origin, Rule, RuleStatus
 from ai_data_engineer.lab.schema import ExpectedRule
 from ai_data_engineer.rules.spec import (
     CompareColumns,
-    CompareConstant,
     RuleSpec,
     SumMatches,
     Via,
@@ -73,7 +72,7 @@ def found_rule(spec: RuleSpec, status: RuleStatus, text: str) -> FoundRule:
             other = spec.other_column
         case SumMatches():
             other = f"{spec.child_table}.{spec.child_column}"
-        case CompareConstant():
+        case _:  # constants, and people's expectations (not_null, unique, allowed values)
             other = None
     return FoundRule(spec.kind, spec.table, spec.column, other, status, text)
 
