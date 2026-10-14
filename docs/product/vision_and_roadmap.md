@@ -1,5 +1,7 @@
 # Lumida: Vision, Design & Roadmap
 
+> **Status 2026-10-14:** Stages 1–3 built and tested (the engine); next is Stage 4, the product around it. Product name: **Lumida** (formerly *AI Data Engineer*). Up-to-date progress: [`docs/guide/how_it_works.md`](../guide/how_it_works.md).
+
 *Version 1, 2026-10-04. Detailed designs: [metadata store](../design/metadata_store.md) (1.1), [test lab](../design/test_lab.md) (1.2), [Postgres adapter](../design/postgres_adapter.md) (1.3), [relationship discovery](../design/relationship_discovery.md) (1.4), [detection](../design/detection.md) (1.5), [lifecycle, health, alerts](../design/lifecycle_health_alerts.md) (1.6). **Plain-language walkthrough: [`../guide/how_it_works.md`](../guide/how_it_works.md).** Written after the scope change from "Snowflake + dbt monitor" to "database-agnostic anomaly engine". This is the reference for **what** we build and **why**. [`CLAUDE.md`](../../CLAUDE.md) tracks **where we are**.*
 
 ---

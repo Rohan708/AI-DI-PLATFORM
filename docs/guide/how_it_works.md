@@ -211,21 +211,21 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 1.6 | Lifecycle, health score, alerts, `lumida run` | ✅ lab: 0 false alarms, quiet nights silent |
 | 2.1–2.2 | AI proposes business rules (*"ship date must be after order date"*, *"invoice total = sum of lines"*); humans approve; the engine checks them as plain SQL | ✅ Gemini proposed 12 of 13 hidden rules; approved rules caught both planted problems |
 | 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ Gemini: 3/3 unsure links judged correctly, 3/3 explanations passed the number guard |
-| 2.6 | Personal data map + PII in unexpected places (counted inside the database) | ✅ lab: planted emails found, 0 false alarms |
-| 2.7 | **The engine asks questions; answers become checks** (required, unique, allowed values, deadlines, closed days, importance); dbt import | ✅ lab: day-one detection of 2 planted problems |
 | 2.5 | Unusual individual rows (*"3 order lines have quantity 500; normally 1–3"*), computed inside the database, IDs attached | ✅ caught on the lab, 0 false alarms |
+| 2.6 | Personal data map + PII in unexpected places (counted inside the database) | ✅ lab: planted emails found, 0 false alarms |
+| 2.7 | The engine asks questions; answers become checks (required, unique, allowed values, deadlines, closed days, importance); dbt import | ✅ lab: day-one detection of 2 planted problems |
 | 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
-| 4 | Product: web UI, API, accounts, self-hosted Docker package, onboarding | |
+| — | Name, logo and landing page (**Lumida**, *light on your data*) | ✅ `website/` (form not connected, domain not chosen) |
+| **4** | **Product: self-hosted Docker package + scheduler, API, accounts, web UI, onboarding** | **next: 4.1 packaging + scheduler** |
 | 5 | Beta with 1–3 real companies; accuracy track record | |
 | 6 | Root cause ("why did this happen?") and suggested fixes | |
 | 7 | Launch: website, pricing, billing | |
 
-**In effort terms:**
-- **Stage 1 (the engine) is essentially complete**, and it's the hardest technical core.
-- Stage 2 is next and adds the AI layer.
-- Stages 3–4 are mostly engineering breadth (more databases, a UI).
-- Stages 5–7 are about real customers.
-- The first **sellable demo** (a free "Database Health Audit": map + problems + score) is possible **right after Stage 1**, using the CLI.
+**In effort terms (2026-10-14):**
+- **The engine is about 85% done:** all 8 kinds of problems, the AI layer, five database types, reconciliation, questions to people. 328 automated tests.
+- **The whole product is about 40–45% done.** What's missing is everything around the engine: it runs from a terminal today. Stage 4 (packaging, scheduler, web app, accounts, onboarding) is the biggest remaining piece, roughly as much work again as everything so far.
+- Stages 5–7 are about real customers: beta, root cause, launch.
+- A **sellable demo** is already possible: a "Database Health Audit" (relationship map, problems with evidence, health score, personal-data map) run with the CLI on a design partner's database.
 
 ---
 
