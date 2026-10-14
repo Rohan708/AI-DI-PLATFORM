@@ -8,8 +8,8 @@ from typing import Any
 
 import pytest
 
-from ai_data_engineer.discovery.settings import DiscoverySettings
-from ai_data_engineer.graph.models import (
+from lumida.discovery.settings import DiscoverySettings
+from lumida.graph.models import (
     Finding,
     FindingCategory,
     FindingStatus,
@@ -18,13 +18,13 @@ from ai_data_engineer.graph.models import (
     RelationshipStatus,
     Severity,
 )
-from ai_data_engineer.reasoning.explain import (
+from lumida.reasoning.explain import (
     check_explanation,
     shareable_finding,
     unsupported_numbers,
 )
-from ai_data_engineer.reasoning.replies import confidence_of
-from ai_data_engineer.reasoning.review_relationships import evidence_hash, needs_review
+from lumida.reasoning.replies import confidence_of
+from lumida.reasoning.review_relationships import evidence_hash, needs_review
 
 T = datetime(2026, 3, 16, 3, tzinfo=UTC)
 CONTEXT = {

@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.graph.models import (
+from lumida.graph.models import (
     AssetColumn,
     AssetKind,
     ColumnProfile,
@@ -23,13 +23,13 @@ from ai_data_engineer.graph.models import (
     TypeFamily,
     relationship_signature,
 )
-from ai_data_engineer.graph.queries import (
+from lumida.graph.queries import (
     Direction,
     get_column_profile_history,
     get_connected_assets,
     get_current_structure,
 )
-from ai_data_engineer.graph.versioning import (
+from lumida.graph.versioning import (
     AssetObservation,
     ColumnObservation,
     mark_missing_assets,

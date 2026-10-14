@@ -17,7 +17,7 @@ pre-commit install
 copy .env.example .env
 ```
 
-In `.env`, set `POSTGRES_PASSWORD` to a value of your choice and use the same password inside `AIDE_DATABASE_URL`.
+In `.env`, set `POSTGRES_PASSWORD` to a value of your choice and use the same password inside `LUMIDA_DATABASE_URL`.
 
 ## Everyday commands
 | make target | Plain command | What it does |
@@ -29,28 +29,28 @@ In `.env`, set `POSTGRES_PASSWORD` to a value of your choice and use the same pa
 | `make test` | `pytest` | All tests (integration needs Docker) |
 | `make check` | lint + typecheck + test | Same as CI |
 | `make db-up` / `db-down` | `docker compose up -d` / `down` | Local Postgres on :5432 |
-| `make migrate` | `alembic upgrade head` | Create/upgrade the metadata-store tables in `AIDE_DATABASE_URL` |
+| `make migrate` | `alembic upgrade head` | Create/upgrade the metadata-store tables in `LUMIDA_DATABASE_URL` |
 | `make migration m="..."` | `alembic revision --autogenerate -m "..."` | Generate a migration after changing models |
 
 When Docker isn't running locally, integration tests are **skipped** with a reason. That is not the same as passing. In CI they **fail** instead of skipping.
 
 ## The test lab (Stage 1.2)
-`docker compose up -d` also starts `aide-lab-postgres` on port 5433, the fake company database. Set the `LAB_POSTGRES_*` and `AIDE_LAB_DATABASE_URL` values in `.env` (see `.env.example`), then:
+`docker compose up -d` also starts `aide-lab-postgres` on port 5433, the fake company database. Set the `LAB_POSTGRES_*` and `LUMIDA_LAB_DATABASE_URL` values in `.env` (see `.env.example`), then:
 
 ```bash
-aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
-aide lab run standard --size small --pipeline shopco   # full nightly job each simulated night
+lumida source add shopco --connection-ref LUMIDA_LAB_DATABASE_URL --exclude-schemas aide_lab
+lumida lab run standard --size small --pipeline shopco   # full nightly job each simulated night
 # or step by step:
-aide lab run standard --size small --scan shopco
-aide source show shopco
-aide discover shopco
-aide detect shopco
-aide findings shopco
-aide lab score --data-source shopco
-aide docs shopco
+lumida lab run standard --size small --scan shopco
+lumida source show shopco
+lumida discover shopco
+lumida detect shopco
+lumida findings shopco
+lumida lab score --data-source shopco
+lumida docs shopco
 ```
 
-Re-running a lab plan on the same source? Run `aide source remove shopco --yes` first, because scan history must move forward in time.
+Re-running a lab plan on the same source? Run `lumida source remove shopco --yes` first, because scan history must move forward in time.
 
 See [`docs/design/test_lab.md`](../design/test_lab.md) for everything else.
 
@@ -66,11 +66,11 @@ docker exec -it aide-postgres psql -U aide -d aide -c "\dt"
   ```powershell
   python -m pip install --force-reinstall --no-deps --no-binary mypy "mypy>=1.11"
   ```
-- **`Program 'aide.exe' failed to run: An Application Control policy has blocked this file`**: the same Smart App Control block, this time on the `aide.exe` launcher pip generates. Run the CLI through Python instead; it's identical:
+- **`Program 'lumida.exe' failed to run: An Application Control policy has blocked this file`**: the same Smart App Control block, this time on the `lumida.exe` launcher pip generates. Run the CLI through Python instead; it's identical:
   ```powershell
-  python -m ai_data_engineer source list
+  python -m lumida source list
   ```
-  Everywhere the docs say `aide …`, you can write `python -m ai_data_engineer …`.
+  Everywhere the docs say `lumida …`, you can write `python -m lumida …`.
 - **Wrong environment:** the prompt must show `(py312)`, not `(base)`. Run `conda activate py312` first.
 - **`docker compose` says a password variable is missing:** your `.env` lacks a line from `.env.example` (e.g. the `LAB_POSTGRES_*` block).
 - **Integration tests are skipped:** Docker Desktop isn't running (bottom-left must say "Engine running").

@@ -9,11 +9,11 @@ import pytest
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.discovery.docs import generate_docs
-from ai_data_engineer.discovery.store import review
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.discovery.discover import discover
+from lumida.discovery.docs import generate_docs
+from lumida.discovery.store import review
+from lumida.graph.models import (
     DataSource,
     Finding,
     FindingStatus,
@@ -21,14 +21,14 @@ from ai_data_engineer.graph.models import (
     RelationshipKind,
     RelationshipStatus,
 )
-from ai_data_engineer.ingestion.base import KeyRef
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.answer_key import AnswerKey
-from ai_data_engineer.lab.runner import build_lab, inject, lab_scan_time, run_plan, tick
-from ai_data_engineer.lab.scenarios import ORPHAN_ID_OFFSET
-from ai_data_engineer.lab.scorer import load_findings, load_relationships, score
+from lumida.ingestion.base import KeyRef
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.answer_key import AnswerKey
+from lumida.lab.runner import build_lab, inject, lab_scan_time, run_plan, tick
+from lumida.lab.scenarios import ORPHAN_ID_OFFSET
+from lumida.lab.scorer import load_findings, load_relationships, score
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 4, 1, 3, tzinfo=UTC)

@@ -13,14 +13,14 @@ from typing import Any
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.dbhealth import DbHealthSettings, check_db_health
-from ai_data_engineer.graph.models import DataSource, Finding, FindingStatus, Tenant
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab
-from ai_data_engineer.reconcile.run import add_pair, reconcile
+from lumida.db import create_db_engine
+from lumida.detection.dbhealth import DbHealthSettings, check_db_health
+from lumida.graph.models import DataSource, Finding, FindingStatus, Tenant
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab
+from lumida.reconcile.run import add_pair, reconcile
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 9, 20, 3, tzinfo=UTC)

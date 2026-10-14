@@ -8,12 +8,12 @@ from typing import Any
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.alerting.notifier import AlertMessage
-from ai_data_engineer.alerting.router import send_alerts
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.recording import change_status, record_finding
-from ai_data_engineer.detection.runner import detect
-from ai_data_engineer.graph.models import (
+from lumida.alerting.notifier import AlertMessage
+from lumida.alerting.router import send_alerts
+from lumida.db import create_db_engine
+from lumida.detection.recording import change_status, record_finding
+from lumida.detection.runner import detect
+from lumida.graph.models import (
     DataSource,
     Finding,
     FindingCategory,
@@ -26,13 +26,13 @@ from ai_data_engineer.graph.models import (
     SourceKind,
     Tenant,
 )
-from ai_data_engineer.health_score.engine import compute_health
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.ingestion.sources import remove_source
-from ai_data_engineer.lab.runner import build_lab, lab_scan_time, run_plan
-from ai_data_engineer.pipeline import run_pipeline
+from lumida.health_score.engine import compute_health
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.ingestion.sources import remove_source
+from lumida.lab.runner import build_lab, lab_scan_time, run_plan
+from lumida.pipeline import run_pipeline
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 6, 1, 3, tzinfo=UTC)
@@ -92,7 +92,7 @@ def test_a_rejected_finding_is_not_raised_again(
         select(FindingEvent).where(FindingEvent.finding_id == finding.id).order_by(FindingEvent.at)
     ).all()
     assert [(e.from_status, e.to_status, e.actor) for e in history] == [
-        (None, FindingStatus.OPEN, "aide"),
+        (None, FindingStatus.OPEN, "lumida"),
         (FindingStatus.OPEN, FindingStatus.REJECTED, "alice"),
     ]
     assert finding.review_note == "legacy, by design"

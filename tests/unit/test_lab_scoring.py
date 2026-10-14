@@ -4,13 +4,13 @@ from datetime import date
 
 import pytest
 
-from ai_data_engineer.graph.models import FindingCategory
-from ai_data_engineer.lab.answer_key import AnswerKey, ExpectedAnomaly
-from ai_data_engineer.lab.runner import PLANS, STAGE_ONE_SCENARIOS
-from ai_data_engineer.lab.scenarios import SCENARIOS
-from ai_data_engineer.lab.schema import TRUE_RELATIONSHIPS, ExpectedRelationship
-from ai_data_engineer.lab.scorer import FoundFinding, FoundRelationship, matches, score
-from ai_data_engineer.lab.state import LabState
+from lumida.graph.models import FindingCategory
+from lumida.lab.answer_key import AnswerKey, ExpectedAnomaly
+from lumida.lab.runner import PLANS, STAGE_ONE_SCENARIOS
+from lumida.lab.scenarios import SCENARIOS
+from lumida.lab.schema import TRUE_RELATIONSHIPS, ExpectedRelationship
+from lumida.lab.scorer import FoundFinding, FoundRelationship, matches, score
+from lumida.lab.state import LabState
 
 DAY = date(2026, 2, 1)
 

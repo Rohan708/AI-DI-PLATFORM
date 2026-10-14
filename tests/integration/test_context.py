@@ -11,16 +11,16 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.context.dbt import import_dbt
-from ai_data_engineer.context.questions import answer, generate
-from ai_data_engineer.context.store import set_note
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.checks.timeseries import FRESHNESS_DEADLINE
-from ai_data_engineer.detection.runner import detect
-from ai_data_engineer.discovery.catalog import load_catalog
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.discovery.store import current_relationships
-from ai_data_engineer.graph.models import (
+from lumida.context.dbt import import_dbt
+from lumida.context.questions import answer, generate
+from lumida.context.store import set_note
+from lumida.db import create_db_engine
+from lumida.detection.checks.timeseries import FRESHNESS_DEADLINE
+from lumida.detection.runner import detect
+from lumida.discovery.catalog import load_catalog
+from lumida.discovery.discover import discover
+from lumida.discovery.store import current_relationships
+from lumida.graph.models import (
     DataSource,
     Finding,
     Origin,
@@ -28,13 +28,13 @@ from ai_data_engineer.graph.models import (
     Rule,
     RuleStatus,
 )
-from ai_data_engineer.health_score.engine import compute_health
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab, inject, lab_scan_time
-from ai_data_engineer.lab.scorer import load_relationships
-from ai_data_engineer.rules.checks import check_rules
+from lumida.health_score.engine import compute_health
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab, inject, lab_scan_time
+from lumida.lab.scorer import load_relationships
+from lumida.rules.checks import check_rules
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 

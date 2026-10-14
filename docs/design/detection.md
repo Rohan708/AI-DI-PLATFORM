@@ -1,11 +1,11 @@
 # Detection (Stage 1.5)
 
-*Code: `src/ai_data_engineer/detection/`. Commands: `aide detect`, `aide findings`. Settings: `detection/settings.py`.*
+*Code: `src/lumida/detection/`. Commands: `lumida detect`, `lumida findings`. Settings: `detection/settings.py`.*
 
 Detection turns the history we collect on every scan into **findings**. Every check is deterministic, with no AI involved, and each table and column is judged against **its own history**: there are no fixed thresholds about anyone's data.
 
 ```
-aide detect shopco
+lumida detect shopco
   load: current structure, the latest scan, the 14 scans before it, relationships
   run every check  ->  observations
   record           ->  new finding / refresh the open one (no duplicates)
@@ -24,7 +24,7 @@ A condition is only resolved if its subject was actually **evaluated** this run.
 
 ## 2. Learning "normal"
 - **Baseline:** the last **14** scans (`baseline_scans`).
-- **Cold start:** with fewer than **7** earlier scans (`min_history_scans`), statistical checks report *"still learning"* instead of guessing. `aide detect` prints how many measurements are still learning.
+- **Cold start:** with fewer than **7** earlier scans (`min_history_scans`), statistical checks report *"still learning"* instead of guessing. `lumida detect` prints how many measurements are still learning.
 - **Robust statistics:** median and MAD (median absolute deviation) instead of mean and standard deviation, so one odd day in the history doesn't distort "normal":
   ```
   robust_z = (value − median(history)) / max(1.4826 × MAD(history), min_spread)
@@ -103,6 +103,6 @@ The integration test `test_benchmark_catches_every_stage_one_anomaly` asserts ex
 | Date | Run | Stage-1 caught | False alarms | Known issues | Notes |
 |---|---|---|---|---|---|
 | 2026-10-07 | lab `standard`, size `small`, seed 42, 15 nightly scans, then `discover` + `detect` | **11 / 11** | 1 | 13 / 13 | Precision 93%, 7 knock-on findings. False alarm: `shop.shipments` volume on a Monday (Saturday orders, quieter) compared with the all-days median, because only 1 earlier Monday existed and 2 were required. **Fixed:** `min_same_weekday_samples` 2 → 1. |
-| 2026-10-08 | integration story test, lab `standard`, size `tiny`, seed 43, `aide run` nightly | — | 2 | — | Two quiet-night alerts: *"shop.customers stopped updating"*. Tiny-lab customers get 0–1 sign-ups a day, so a day without one is chance; a real low-traffic table would cause the same false alarm. **Fixed:** freshness tells batch loads from trickle tables; trickle tables need ≥ 5 rows per scan to be judged. |
-| 2026-10-10 | lab `standard`, size `small`, seed 42, `aide run` every night (source shopco3) | **11 / 11** | 3 | 13 / 13 | Both freshness scenarios still caught after the batch/trickle fix. New false alarms from detecting every night: `volume_drop` on sign-up tables (`customers` 3 vs 9, `addresses` 3 vs 13, `CUST_MASTER` 3 vs 7; also `customer_summary` 4 vs 7 on a quiet night, resolved later). **Fixed:** a drop must also exceed 3× the count's natural noise (√usual). |
-| 2026-10-11 | lab `standard`, size `small`, seed 42, `aide run` every night (source shopco4), after the batch/trickle and count-noise fixes | **11 / 11** | **0** | 13 / 13 | All 13 quiet nights silent; one digest of 19 findings on injection night. Precision 100%, 7 knock-ons. Row outliers (2.5) caught `fat_finger_quantity` (3 rows, up to 250× typical). Business-rule scenarios need approved rules (caught on shopco3). **Stage 1 confirmed.** |
+| 2026-10-08 | integration story test, lab `standard`, size `tiny`, seed 43, `lumida run` nightly | — | 2 | — | Two quiet-night alerts: *"shop.customers stopped updating"*. Tiny-lab customers get 0–1 sign-ups a day, so a day without one is chance; a real low-traffic table would cause the same false alarm. **Fixed:** freshness tells batch loads from trickle tables; trickle tables need ≥ 5 rows per scan to be judged. |
+| 2026-10-10 | lab `standard`, size `small`, seed 42, `lumida run` every night (source shopco3) | **11 / 11** | 3 | 13 / 13 | Both freshness scenarios still caught after the batch/trickle fix. New false alarms from detecting every night: `volume_drop` on sign-up tables (`customers` 3 vs 9, `addresses` 3 vs 13, `CUST_MASTER` 3 vs 7; also `customer_summary` 4 vs 7 on a quiet night, resolved later). **Fixed:** a drop must also exceed 3× the count's natural noise (√usual). |
+| 2026-10-11 | lab `standard`, size `small`, seed 42, `lumida run` every night (source shopco4), after the batch/trickle and count-noise fixes | **11 / 11** | **0** | 13 / 13 | All 13 quiet nights silent; one digest of 19 findings on injection night. Precision 100%, 7 knock-ons. Row outliers (2.5) caught `fat_finger_quantity` (3 rows, up to 250× typical). Business-rule scenarios need approved rules (caught on shopco3). **Stage 1 confirmed.** |

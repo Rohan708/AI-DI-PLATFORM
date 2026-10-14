@@ -9,20 +9,20 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.discovery.catalog import load_catalog
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.discovery.catalog import load_catalog
+from lumida.graph.models import (
     ColumnProfile,
     DataSource,
     Finding,
     FindingCategory,
     FindingStatus,
 )
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab, inject
-from ai_data_engineer.semantic.run import PII_UNEXPECTED, check_semantic
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab, inject
+from lumida.semantic.run import PII_UNEXPECTED, check_semantic
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 9, 25, 3, tzinfo=UTC)

@@ -10,9 +10,9 @@ from typing import Any
 from sqlalchemy import Engine, select
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.discovery.discover import discover
+from lumida.graph.models import (
     DataSource,
     Finding,
     FindingCategory,
@@ -20,18 +20,18 @@ from ai_data_engineer.graph.models import (
     Rule,
     RuleStatus,
 )
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.answer_key import AnswerKey
-from ai_data_engineer.lab.rule_scoring import load_ai_rules, score_rules
-from ai_data_engineer.lab.runner import build_lab, inject
-from ai_data_engineer.lab.schema import HIDDEN_RULES
-from ai_data_engineer.lab.scorer import load_findings, score
-from ai_data_engineer.reasoning.llm import LLMReply
-from ai_data_engineer.reasoning.propose import propose_rules
-from ai_data_engineer.rules.checks import check_rules
-from ai_data_engineer.rules.store import review_rule, rule_spec
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.answer_key import AnswerKey
+from lumida.lab.rule_scoring import load_ai_rules, score_rules
+from lumida.lab.runner import build_lab, inject
+from lumida.lab.schema import HIDDEN_RULES
+from lumida.lab.scorer import load_findings, score
+from lumida.reasoning.llm import LLMReply
+from lumida.reasoning.propose import propose_rules
+from lumida.rules.checks import check_rules
+from lumida.rules.store import review_rule, rule_spec
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 7, 1, 3, tzinfo=UTC)

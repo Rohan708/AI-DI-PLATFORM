@@ -2,9 +2,9 @@
 
 from datetime import UTC, datetime
 
-from ai_data_engineer.graph.models import TypeFamily
-from ai_data_engineer.reconcile.compare import ColumnSnap, TableSnap, comparable, compare
-from ai_data_engineer.reconcile.settings import ReconcileSettings
+from lumida.graph.models import TypeFamily
+from lumida.reconcile.compare import ColumnSnap, TableSnap, comparable, compare
+from lumida.reconcile.settings import ReconcileSettings
 
 T = datetime(2026, 3, 16, 3, tzinfo=UTC)
 S = ReconcileSettings()

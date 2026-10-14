@@ -1,6 +1,6 @@
 # Metadata store design (Stage 1.1)
 
-*The database **our tool** uses to remember everything it learns about customer databases. Code: `src/ai_data_engineer/graph/`. Migration: `src/ai_data_engineer/migrations/versions/v0001_initial_schema.py`. Rationale: [ADR 0004](../decisions/0004-identity-version-profile.md).*
+*The database **our tool** uses to remember everything it learns about customer databases. Code: `src/lumida/graph/`. Migration: `src/lumida/migrations/versions/v0001_initial_schema.py`. Rationale: [ADR 0004](../decisions/0004-identity-version-profile.md).*
 
 Nothing in this layer touches a customer database. Adapters ([Stage 1.3](postgres_adapter.md)) read customer databases and `ingestion/scan.py` writes here; discovery and detection (Stages 1.4–1.5) read from here.
 

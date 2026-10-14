@@ -8,14 +8,14 @@ from sqlalchemy import func, select
 from sqlalchemy import types as sqltypes
 from sqlalchemy.dialects import mssql, mysql, oracle, postgresql
 
-from ai_data_engineer.context.dbt import parse_dbt
-from ai_data_engineer.context.questions import AnswerError, _yes
-from ai_data_engineer.context.store import ContextError, parse_criticality, parse_weekdays
-from ai_data_engineer.detection.checks.timeseries import _closed_days_between
-from ai_data_engineer.health_score.score import Score, group_score
-from ai_data_engineer.ingestion.postgres.rules import compile_rule
-from ai_data_engineer.ingestion.sql.queries import _limited, rule_conditions, rule_rows
-from ai_data_engineer.rules.spec import describe, parse_spec
+from lumida.context.dbt import parse_dbt
+from lumida.context.questions import AnswerError, _yes
+from lumida.context.store import ContextError, parse_criticality, parse_weekdays
+from lumida.detection.checks.timeseries import _closed_days_between
+from lumida.health_score.score import Score, group_score
+from lumida.ingestion.postgres.rules import compile_rule
+from lumida.ingestion.sql.queries import _limited, rule_conditions, rule_rows
+from lumida.rules.spec import describe, parse_spec
 
 NOT_NULL = {"kind": "not_null", "table": "shop.addresses", "column": "postal_code"}
 UNIQUE = {"kind": "unique", "table": "shop.customers", "column": "email"}

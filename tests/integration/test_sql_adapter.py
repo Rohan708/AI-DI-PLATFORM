@@ -31,12 +31,12 @@ from sqlalchemy import (
 from sqlalchemy.exc import DBAPIError
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.rows import ROW_OUTLIER, check_row_outliers
-from ai_data_engineer.detection.runner import detect
-from ai_data_engineer.discovery.catalog import load_catalog
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.detection.rows import ROW_OUTLIER, check_row_outliers
+from lumida.detection.runner import detect
+from lumida.discovery.catalog import load_catalog
+from lumida.discovery.discover import discover
+from lumida.graph.models import (
     AssetProfile,
     DataSource,
     Finding,
@@ -44,17 +44,17 @@ from ai_data_engineer.graph.models import (
     SourceKind,
     Tenant,
 )
-from ai_data_engineer.graph.queries import get_asset_profile_history, get_column_profile_history
-from ai_data_engineer.ingestion.base import KeyRef
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.ingestion.sql import SqlAdapter
-from ai_data_engineer.lab.runner import build_lab
-from ai_data_engineer.lab.scorer import load_relationships
-from ai_data_engineer.rules.checks import check_rules
-from ai_data_engineer.rules.spec import parse_spec
-from ai_data_engineer.rules.store import add_user_rule
+from lumida.graph.queries import get_asset_profile_history, get_column_profile_history
+from lumida.ingestion.base import KeyRef
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.ingestion.sql import SqlAdapter
+from lumida.lab.runner import build_lab
+from lumida.lab.scorer import load_relationships
+from lumida.rules.checks import check_rules
+from lumida.rules.spec import parse_spec
+from lumida.rules.store import add_user_rule
 
 LAB = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 9, 15, 3, tzinfo=UTC)

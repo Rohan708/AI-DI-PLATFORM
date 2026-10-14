@@ -7,7 +7,7 @@ from typing import cast
 import pytest
 from sqlalchemy import Dialect, Index
 
-from ai_data_engineer.graph.models import (
+from lumida.graph.models import (
     Base,
     FindingCategory,
     FindingStatus,
@@ -16,9 +16,9 @@ from ai_data_engineer.graph.models import (
     finding_fingerprint,
     relationship_signature,
 )
-from ai_data_engineer.graph.models import enums as enums_module
-from ai_data_engineer.graph.models.base import ENUM_LENGTH
-from ai_data_engineer.graph.versioning import RecordResult
+from lumida.graph.models import enums as enums_module
+from lumida.graph.models.base import ENUM_LENGTH
+from lumida.graph.versioning import RecordResult
 
 DIALECT = cast(Dialect, None)  # StrEnumType ignores the dialect
 

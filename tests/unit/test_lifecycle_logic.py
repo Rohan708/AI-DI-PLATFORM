@@ -5,10 +5,10 @@ from typing import cast
 import pytest
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.alerting.notifier import AlertMessage, SlackNotifier, slack_text
-from ai_data_engineer.alerting.router import AlertSettings, build_digest
-from ai_data_engineer.detection.recording import InvalidTransitionError, change_status
-from ai_data_engineer.graph.models import (
+from lumida.alerting.notifier import AlertMessage, SlackNotifier, slack_text
+from lumida.alerting.router import AlertSettings, build_digest
+from lumida.detection.recording import InvalidTransitionError, change_status
+from lumida.graph.models import (
     DataSource,
     Finding,
     FindingStatus,
@@ -16,8 +16,8 @@ from ai_data_engineer.graph.models import (
     SourceKind,
     utcnow,
 )
-from ai_data_engineer.health_score.score import group_score, table_score
-from ai_data_engineer.pipeline import STEPS, PipelineResult, StepOutcome
+from lumida.health_score.score import group_score, table_score
+from lumida.pipeline import STEPS, PipelineResult, StepOutcome
 
 
 def test_table_score_subtracts_penalties_with_a_floor() -> None:
@@ -44,7 +44,7 @@ def test_digest_counts_by_severity_and_lists_the_worst_first() -> None:
     source = DataSource(name="shopco", kind=SourceKind.POSTGRES)
     findings = [_finding(Severity.HIGH, "orders stale"), _finding(Severity.MEDIUM, "nulls")]
     digest = build_digest(source, findings)
-    assert digest.title == "AI Data Engineer: 2 new problems in shopco (1 high, 1 medium)"
+    assert digest.title == "Lumida: 2 new problems in shopco (1 high, 1 medium)"
     assert digest.lines == ["[high] orders stale", "[medium] nulls"]
 
 
@@ -88,8 +88,8 @@ def test_status_rules_are_enforced() -> None:
 def test_history_keeps_one_scan_per_day() -> None:
     from datetime import UTC, datetime, timedelta
 
-    from ai_data_engineer.detection.context import daily
-    from ai_data_engineer.graph.models import AssetProfile
+    from lumida.detection.context import daily
+    from lumida.graph.models import AssetProfile
 
     night = datetime(2026, 3, 1, 3, tzinfo=UTC)
     scans = [

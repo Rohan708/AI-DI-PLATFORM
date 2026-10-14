@@ -8,8 +8,8 @@ Postgres has its own adapter; every other database goes through the **generic SQ
 The URL is never stored in the metadata store, only the variable's name.
 
 ```
-python -m ai_data_engineer source add <name> --kind <mysql|sqlserver|oracle|snowflake> --connection-ref <ENV_VAR_NAME>
-python -m ai_data_engineer run <name>
+python -m lumida source add <name> --kind <mysql|sqlserver|oracle|snowflake> --connection-ref <ENV_VAR_NAME>
+python -m lumida run <name>
 ```
 
 ## MySQL / MariaDB
@@ -17,16 +17,16 @@ python -m ai_data_engineer run <name>
 python -m pip install -e ".[mysql]"
 ```
 ```sql
-CREATE USER 'aide'@'%' IDENTIFIED BY '<strong password>';
-GRANT SELECT, SHOW VIEW ON shopdb.* TO 'aide'@'%';
+CREATE USER 'lumida'@'%' IDENTIFIED BY '<strong password>';
+GRANT SELECT, SHOW VIEW ON shopdb.* TO 'lumida'@'%';
 -- optional: lets discovery read the application's joins from the statement digests
-GRANT SELECT ON performance_schema.events_statements_summary_by_digest TO 'aide'@'%';
+GRANT SELECT ON performance_schema.events_statements_summary_by_digest TO 'lumida'@'%';
 ```
 `.env`:
 ```
 SHOPDB_URL=mysql+pymysql://aide:<password>@db-host:3306/shopdb
 ```
-**What aide does on each connection:**
+**What Lumida does on each connection:**
 - `SET SESSION TRANSACTION READ ONLY`
 - `max_execution_time` (statement timeout)
 - `innodb_lock_wait_timeout`
@@ -39,11 +39,11 @@ python -m pip install -e ".[sqlserver]"
 ```
 You also need Microsoft's **ODBC Driver 18 for SQL Server** on the machine.
 ```sql
-CREATE LOGIN aide WITH PASSWORD = '<strong password>';
+CREATE LOGIN lumida WITH PASSWORD = '<strong password>';
 USE shopdb;
-CREATE USER aide FOR LOGIN aide;
-ALTER ROLE db_datareader ADD MEMBER aide;
-GRANT VIEW DATABASE STATE TO aide;  -- optional: query statistics for discovery
+CREATE USER lumida FOR LOGIN lumida;
+ALTER ROLE db_datareader ADD MEMBER lumida;
+GRANT VIEW DATABASE STATE TO lumida;  -- optional: query statistics for discovery
 ```
 `.env`:
 ```
@@ -52,7 +52,7 @@ SHOP_MSSQL_URL=mssql+pyodbc://aide:<password>@db-host:1433/shopdb?driver=ODBC+Dr
 **Read-only and timeouts:**
 - SQL Server has no read-only transactions, so read-only comes from the login (`db_datareader` only).
 - `ApplicationIntent=ReadOnly` routes to a readable secondary when there is one.
-- aide sets `LOCK_TIMEOUT` itself. There's no per-session statement timeout, so set one on the driver (e.g. `&timeout=30`) or a Resource Governor pool if you need it.
+- Lumida sets `LOCK_TIMEOUT` itself. There's no per-session statement timeout, so set one on the driver (e.g. `&timeout=30`) or a Resource Governor pool if you need it.
 
 ## Oracle
 ```bash
@@ -60,10 +60,10 @@ python -m pip install -e ".[oracle]"
 ```
 This uses python-oracledb in thin mode, so no Oracle client is needed.
 ```sql
-CREATE USER aide IDENTIFIED BY "<strong password>";
-GRANT CREATE SESSION TO aide;
-GRANT SELECT ANY TABLE TO aide;           -- or SELECT on each table of the app schema
-GRANT SELECT ON v_$sql TO aide;           -- optional: query statistics for discovery
+CREATE USER lumida IDENTIFIED BY "<strong password>";
+GRANT CREATE SESSION TO lumida;
+GRANT SELECT ANY TABLE TO lumida;           -- or SELECT on each table of the app schema
+GRANT SELECT ON v_$sql TO lumida;           -- optional: query statistics for discovery
 ```
 `.env`:
 ```
@@ -83,7 +83,7 @@ Use the read-only role and key-pair user from [`snowflake_setup.md`](snowflake_s
 ```
 JAFFLE_SF_URL=snowflake://AIDE_SVC@<account>/JAFFLE_DB?warehouse=AIDE_WH&role=AIDE_READONLY&private_key_file=C:/keys/aide_svc_key.p8
 ```
-**Read-only and timeouts:** read-only comes from the role. aide sets `STATEMENT_TIMEOUT_IN_SECONDS` per session. Queries run in your warehouse, so they cost credits; use an X-Small warehouse with auto-suspend.
+**Read-only and timeouts:** read-only comes from the role. Lumida sets `STATEMENT_TIMEOUT_IN_SECONDS` per session. Queries run in your warehouse, so they cost credits; use an X-Small warehouse with auto-suspend.
 
 ## What works where
 | | Postgres | MySQL | SQL Server | Oracle | Snowflake |

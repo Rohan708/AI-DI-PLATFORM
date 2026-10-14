@@ -1,6 +1,6 @@
 # The messy test lab & benchmark (Stage 1.2)
 
-*Code: `src/ai_data_engineer/lab/`. Commands: `aide lab …`. Answer keys: `validation/answer_keys/`. Reports: `validation/reports/`.*
+*Code: `src/lumida/lab/`. Commands: `lumida lab …`. Answer keys: `validation/answer_keys/`. Reports: `validation/reports/`.*
 
 ## Why it exists
 We can't build an anomaly detector against clean data, and we can't wait for customers to tell us whether it works. The lab is a **fake company database that is messy on purpose**, with a **written answer key** of every planted problem. Every later stage is scored against it:
@@ -114,8 +114,8 @@ Faults (`skipped_load`, `half_load`) are scheduled and happen on the **next** si
 Detection needs history, so plans simulate clean days first. With `--scan SOURCE` (Stage 1.3), a **scan of the lab runs after each simulated day**, stamped 03:00 the next simulated morning (after the 02:00 ETL), just like a nightly scan of a real customer database:
 
 ```bash
-aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
-aide lab run standard --size small --scan shopco
+lumida source add shopco --connection-ref LUMIDA_LAB_DATABASE_URL --exclude-schemas aide_lab
+lumida lab run standard --size small --scan shopco
 ```
 
 ---
@@ -126,7 +126,7 @@ Written **before** detection runs, by the scenarios themselves:
 - the matching `.md` is for humans: planted anomalies, the true relationships, and the normal patterns
 
 ## The scorer (benchmark)
-`aide lab score --data-source <name>` reads our findings and relationships from the metadata store and compares them with the answer key.
+`lumida lab score --data-source <name>` reads our findings and relationships from the metadata store and compares them with the answer key.
 
 **Matching rules:**
 - A finding **catches** a planted anomaly if it has the same **category** and **table**, and the columns agree (either side may be table-level).
@@ -149,30 +149,30 @@ Until detection exists (Stage 1.5), the score is 0 caught, which is expected.
 ## Commands
 | Command | Does |
 |---|---|
-| `aide lab build [--seed 42] [--size default]` | (re)create the lab with history |
-| `aide lab tick [--days N] [--scan SOURCE]` | simulate more days (optionally scanning after each) |
-| `aide lab inject SCENARIO …` | plant anomalies (effective next day) |
-| `aide lab run [standard\|quick] [--seed] [--size] [--scan SOURCE]` | full plan + answer key written (optionally scanning after each day) |
-| `aide lab status` | current simulated day, pending faults, planted count |
-| `aide lab scenarios` | list scenarios and plans |
-| `aide lab answer-key [--out DIR]` | write the answer key |
-| `aide lab score [--data-source NAME] [--out DIR]` | benchmark report |
+| `lumida lab build [--seed 42] [--size default]` | (re)create the lab with history |
+| `lumida lab tick [--days N] [--scan SOURCE]` | simulate more days (optionally scanning after each) |
+| `lumida lab inject SCENARIO …` | plant anomalies (effective next day) |
+| `lumida lab run [standard\|quick] [--seed] [--size] [--scan SOURCE]` | full plan + answer key written (optionally scanning after each day) |
+| `lumida lab status` | current simulated day, pending faults, planted count |
+| `lumida lab scenarios` | list scenarios and plans |
+| `lumida lab answer-key [--out DIR]` | write the answer key |
+| `lumida lab score [--data-source NAME] [--out DIR]` | benchmark report |
 
 ### The nightly pipeline (from Stage 1.6)
 ```bash
-aide lab run standard --size small --pipeline shopco   # scan+discover+detect+health+alert every night
-aide lab score --data-source shopco
+lumida lab run standard --size small --pipeline shopco   # scan+discover+detect+health+alert every night
+lumida lab score --data-source shopco
 ```
 Night 1 prints *quiet baseline*; the injection night prints one digest with the planted problems.
 
 ### Full benchmark loop, step by step (from Stage 1.4)
 ```bash
-aide source add shopco --connection-ref AIDE_LAB_DATABASE_URL --exclude-schemas aide_lab
-aide lab run standard --size small --scan shopco   # build, nightly scans, plant, scan
-aide discover shopco                               # relationships + orphan checks
-aide detect shopco                                 # structural, value, time-series checks
-aide lab score --data-source shopco                # caught / missed / false alarms
-aide docs shopco                                   # generated data dictionary + map
+lumida source add shopco --connection-ref LUMIDA_LAB_DATABASE_URL --exclude-schemas aide_lab
+lumida lab run standard --size small --scan shopco   # build, nightly scans, plant, scan
+lumida discover shopco                               # relationships + orphan checks
+lumida detect shopco                                 # structural, value, time-series checks
+lumida lab score --data-source shopco                # caught / missed / false alarms
+lumida docs shopco                                   # generated data dictionary + map
 ```
 
-Needs `AIDE_LAB_DATABASE_URL` (see `.env.example`) and the `lab-postgres` service from `docker-compose.yml`.
+Needs `LUMIDA_LAB_DATABASE_URL` (see `.env.example`) and the `lab-postgres` service from `docker-compose.yml`.

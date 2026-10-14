@@ -8,13 +8,13 @@ from typing import Any
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.rows import ROW_OUTLIER, check_row_outliers
-from ai_data_engineer.graph.models import DataSource, Finding, FindingStatus
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab, inject
+from lumida.db import create_db_engine
+from lumida.detection.rows import ROW_OUTLIER, check_row_outliers
+from lumida.graph.models import DataSource, Finding, FindingStatus
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab, inject
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 9, 1, 3, tzinfo=UTC)

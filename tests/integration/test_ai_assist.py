@@ -10,13 +10,13 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.recording import record_finding
-from ai_data_engineer.detection.runner import detect
-from ai_data_engineer.discovery.catalog import load_catalog
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.discovery.store import current_relationships
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.detection.recording import record_finding
+from lumida.detection.runner import detect
+from lumida.discovery.catalog import load_catalog
+from lumida.discovery.discover import discover
+from lumida.discovery.store import current_relationships
+from lumida.graph.models import (
     DataSource,
     Finding,
     FindingCategory,
@@ -24,13 +24,13 @@ from ai_data_engineer.graph.models import (
     RelationshipStatus,
     Severity,
 )
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab
-from ai_data_engineer.reasoning.explain import explain_findings, is_current, unexplained
-from ai_data_engineer.reasoning.llm import LLMReply
-from ai_data_engineer.reasoning.review_relationships import review_relationships
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab
+from lumida.reasoning.explain import explain_findings, is_current, unexplained
+from lumida.reasoning.llm import LLMReply
+from lumida.reasoning.review_relationships import review_relationships
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 8, 1, 3, tzinfo=UTC)

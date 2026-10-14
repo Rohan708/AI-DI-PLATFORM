@@ -12,8 +12,8 @@ from sqlalchemy import Engine, func, select, text
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.graph.models import (
     AssetColumn,
     AssetColumnVersion,
     AssetProfile,
@@ -25,8 +25,8 @@ from ai_data_engineer.graph.models import (
     SourceKind,
     TypeFamily,
 )
-from ai_data_engineer.graph.queries import get_current_structure
-from ai_data_engineer.ingestion.base import (
+from lumida.graph.queries import get_current_structure
+from lumida.ingestion.base import (
     DiscoveredTable,
     HealthLimits,
     HealthReading,
@@ -39,13 +39,13 @@ from ai_data_engineer.ingestion.base import (
     RuleResult,
     TableMeasurement,
 )
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.ingestion.sources import add_source, get_source
-from ai_data_engineer.lab.runner import build_lab, inject, lab_scan_time, run_plan
-from ai_data_engineer.lab.schema import TRUE_RELATIONSHIPS
-from ai_data_engineer.rules.spec import RuleSpec
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.ingestion.sources import add_source, get_source
+from lumida.lab.runner import build_lab, inject, lab_scan_time, run_plan
+from lumida.lab.schema import TRUE_RELATIONSHIPS
+from lumida.rules.spec import RuleSpec
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 LAB_TABLES = {
@@ -208,7 +208,7 @@ def test_connection_is_read_only_with_time_limits(adapter: PostgresAdapter) -> N
         assert conn.scalar(text("SHOW transaction_read_only")) == "on"
         assert conn.scalar(text("SHOW statement_timeout")) == "30s"
         assert conn.scalar(text("SHOW lock_timeout")) == "2s"
-        assert conn.scalar(text("SELECT current_setting('application_name')")) == "aide"
+        assert conn.scalar(text("SELECT current_setting('application_name')")) == "lumida"
     with pytest.raises(DBAPIError, match="read-only transaction"), adapter.read_only() as conn:
         conn.execute(text("CREATE TABLE shop.should_fail (id int)"))
 
@@ -367,12 +367,12 @@ def test_unreachable_database_fails_the_run(session: Session, source: DataSource
 def test_registered_source_scans_through_its_connection_ref(
     session: Session, lab_url: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("AIDE_TEST_LAB_URL", lab_url)
+    monkeypatch.setenv("LUMIDA_TEST_LAB_URL", lab_url)
     add_source(
         session,
         name="shopco",
         kind=SourceKind.POSTGRES,
-        connection_ref="AIDE_TEST_LAB_URL",
+        connection_ref="LUMIDA_TEST_LAB_URL",
         settings={"exclude_schemas": ["aide_lab"]},
     )
     source = get_source(session, "shopco")

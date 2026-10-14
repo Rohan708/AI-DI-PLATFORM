@@ -9,9 +9,9 @@ from typing import Any
 import pytest
 from sqlalchemy import Engine, text
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.lab.answer_key import AnswerKey, write_answer_key
-from ai_data_engineer.lab.runner import (
+from lumida.db import create_db_engine
+from lumida.lab.answer_key import AnswerKey, write_answer_key
+from lumida.lab.runner import (
     PLANS,
     STAGE_ONE_SCENARIOS,
     answer_key,
@@ -20,10 +20,10 @@ from ai_data_engineer.lab.runner import (
     run_plan,
     tick,
 )
-from ai_data_engineer.lab.scenarios import ORPHAN_ID_OFFSET, SCENARIOS
-from ai_data_engineer.lab.schema import TRUE_RELATIONSHIPS, LabSafetyError
-from ai_data_engineer.lab.sizes import DEFAULT_START_DATE, SIZES
-from ai_data_engineer.lab.state import load_state
+from lumida.lab.scenarios import ORPHAN_ID_OFFSET, SCENARIOS
+from lumida.lab.schema import TRUE_RELATIONSHIPS, LabSafetyError
+from lumida.lab.sizes import DEFAULT_START_DATE, SIZES
+from lumida.lab.state import load_state
 
 SEED = 7
 SIZE = "tiny"

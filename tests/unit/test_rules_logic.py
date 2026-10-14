@@ -10,24 +10,24 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from ai_data_engineer.config import Settings
-from ai_data_engineer.discovery.catalog import Catalog, ColumnInfo, TableInfo
-from ai_data_engineer.graph.models import DataSource, RuleStatus, TypeFamily
-from ai_data_engineer.ingestion.postgres.rules import compile_rule
-from ai_data_engineer.lab.rule_scoring import found_rule, score_rules
-from ai_data_engineer.lab.schema import HIDDEN_RULES
-from ai_data_engineer.reasoning import llm as llm_module
-from ai_data_engineer.reasoning.context import schema_context
-from ai_data_engineer.reasoning.llm import (
+from lumida.config import Settings
+from lumida.discovery.catalog import Catalog, ColumnInfo, TableInfo
+from lumida.graph.models import DataSource, RuleStatus, TypeFamily
+from lumida.ingestion.postgres.rules import compile_rule
+from lumida.lab.rule_scoring import found_rule, score_rules
+from lumida.lab.schema import HIDDEN_RULES
+from lumida.reasoning import llm as llm_module
+from lumida.reasoning.context import schema_context
+from lumida.reasoning.llm import (
     GeminiClient,
     LLMError,
     LLMNotConfiguredError,
     llm_from_settings,
     parse_gemini_reply,
 )
-from ai_data_engineer.reasoning.propose import parse_rules_reply
-from ai_data_engineer.rules.settings import RuleSettings
-from ai_data_engineer.rules.spec import Link, describe, parse_spec, signature, validate
+from lumida.reasoning.propose import parse_rules_reply
+from lumida.rules.settings import RuleSettings
+from lumida.rules.spec import Link, describe, parse_spec, signature, validate
 
 SHIPPED = {
     "kind": "compare_columns", "table": "shop.shipments", "column": "shipped_at", "op": ">=",

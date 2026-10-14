@@ -5,15 +5,15 @@ import re
 
 import pytest
 
-from ai_data_engineer.ingestion.base import PiiCounts
-from ai_data_engineer.semantic.classify import (
+from lumida.ingestion.base import PiiCounts
+from lumida.semantic.classify import (
     classify,
     holds,
     same_kind_different_names,
     unexpected,
 )
-from ai_data_engineer.semantic.patterns import KINDS_BY_NAME, expected_kinds
-from ai_data_engineer.semantic.settings import SemanticSettings
+from lumida.semantic.patterns import KINDS_BY_NAME, expected_kinds
+from lumida.semantic.settings import SemanticSettings
 
 
 def _hit(kind: str, value: str) -> bool:

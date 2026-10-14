@@ -1,11 +1,11 @@
 # Postgres adapter & scanning (Stage 1.3)
 
-*Code: `src/ai_data_engineer/ingestion/`. Commands: `aide source …`, `aide scan …`. Safety rationale: [ADR 0005](../decisions/0005-scanning-safety.md).*
+*Code: `src/lumida/ingestion/`. Commands: `lumida source …`, `lumida scan …`. Safety rationale: [ADR 0005](../decisions/0005-scanning-safety.md).*
 
 This is how the tool reads a customer's database. Postgres is first; every other database implements the same interface later (Stage 3).
 
 ```
-aide scan shopco
+lumida scan shopco
    │
    ├─ open a run (ingestion_run)
    ├─ adapter.introspect()   ── catalog only, no table data ──►  structure
@@ -36,7 +36,7 @@ Every query runs inside `PostgresAdapter.read_only()`:
 | Can't write | `SET TRANSACTION READ ONLY`: Postgres itself rejects any write (a test proves it) |
 | Can't run long | `SET LOCAL statement_timeout` (default **30 s**) |
 | Can't block the app | `SET LOCAL lock_timeout` (default **2 s**) |
-| Visible to their DBA | `application_name = 'aide'` shows up in `pg_stat_activity` |
+| Visible to their DBA | `application_name = 'lumida'` shows up in `pg_stat_activity` |
 | One slow table can't sink a scan | each table is profiled in its own transaction; a failure marks the run `partial` and the rest continue |
 | Big tables stay cheap | sampled above a threshold (below) |
 
@@ -84,7 +84,7 @@ What gets measured depends on the type family:
 - **Privacy:** `allow_value_samples = false` turns off everything that stores actual values (top values, min/max of text). Numbers and dates are aggregates, not identifying values.
 
 ## 5. Scan settings (`data_source.settings`)
-Validated on `aide source add`. Unknown keys are rejected so typos fail loudly. Only non-default values are stored.
+Validated on `lumida source add`. Unknown keys are rejected so typos fail loudly. Only non-default values are stored.
 
 | Setting | Default | Meaning |
 |---|---|---|
@@ -111,14 +111,14 @@ Validated on `aide source add`. Unknown keys are rejected so typos fail loudly. 
 ## 8. Commands
 | Command | Does |
 |---|---|
-| `aide source add NAME --connection-ref ENV_VAR [--exclude-schemas a,b] [--include-schemas …] [--sample-row-threshold N] [--no-value-samples]` | register a database |
-| `aide source list` | registered databases |
-| `aide source show NAME` | what we know: every table (kind, rows, PK) and column (type, family, nullable, null %, distinct) from the latest scan |
-| `aide scan NAME [--as-of ISO-DATETIME]` | scan now; exit code 1 unless it fully succeeded |
-| `aide lab run … --scan NAME` / `aide lab tick … --scan NAME` | scan the lab after every simulated day (at 03:00 simulated time) |
+| `lumida source add NAME --connection-ref ENV_VAR [--exclude-schemas a,b] [--include-schemas …] [--sample-row-threshold N] [--no-value-samples]` | register a database |
+| `lumida source list` | registered databases |
+| `lumida source show NAME` | what we know: every table (kind, rows, PK) and column (type, family, nullable, null %, distinct) from the latest scan |
+| `lumida scan NAME [--as-of ISO-DATETIME]` | scan now; exit code 1 unless it fully succeeded |
+| `lumida lab run … --scan NAME` / `lumida lab tick … --scan NAME` | scan the lab after every simulated day (at 03:00 simulated time) |
 
 ## 9. Known limitations (tracked in CLAUDE.md backlog)
 - Views are not profiled.
 - Renames look like drop + add (no rename detection yet).
-- History must be recorded in time order. Re-running a lab plan against the **same** data source restarts the simulated calendar earlier than existing scans, so use a fresh source name per lab run until `aide source remove` exists.
+- History must be recorded in time order. Re-running a lab plan against the **same** data source restarts the simulated calendar earlier than existing scans, so use a fresh source name per lab run until `lumida source remove` exists.
 - Query-log reading (`pg_stat_statements`) comes in Stage 1.4.

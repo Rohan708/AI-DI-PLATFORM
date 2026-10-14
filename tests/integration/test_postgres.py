@@ -1,6 +1,6 @@
 from sqlalchemy import text
 
-from ai_data_engineer.db import create_db_engine
+from lumida.db import create_db_engine
 
 
 def test_can_connect_to_postgres(postgres_url: str) -> None:

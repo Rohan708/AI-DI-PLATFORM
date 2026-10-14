@@ -5,14 +5,14 @@ import uuid
 
 import pytest
 
-from ai_data_engineer.discovery.candidates import Candidate, generate_candidates
-from ai_data_engineer.discovery.catalog import Catalog, ColumnInfo, TableInfo
-from ai_data_engineer.discovery.naming import name_score, tokens
-from ai_data_engineer.discovery.querylog import join_counts, join_pairs
-from ai_data_engineer.discovery.scoring import choose_best, score
-from ai_data_engineer.discovery.settings import DiscoverySettings
-from ai_data_engineer.graph.models import DataSource, SourceKind, TypeFamily
-from ai_data_engineer.ingestion.base import QueryStat
+from lumida.discovery.candidates import Candidate, generate_candidates
+from lumida.discovery.catalog import Catalog, ColumnInfo, TableInfo
+from lumida.discovery.naming import name_score, tokens
+from lumida.discovery.querylog import join_counts, join_pairs
+from lumida.discovery.scoring import choose_best, score
+from lumida.discovery.settings import DiscoverySettings
+from lumida.graph.models import DataSource, SourceKind, TypeFamily
+from lumida.ingestion.base import QueryStat
 
 SETTINGS = DiscoverySettings()
 

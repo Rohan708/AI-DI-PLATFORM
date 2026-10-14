@@ -12,16 +12,16 @@ from sqlalchemy import types as sqltypes
 from sqlalchemy.dialects import mssql, mysql, oracle, postgresql
 from sqlalchemy.engine import Dialect
 
-from ai_data_engineer.graph.models import TypeFamily
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.ingestion.sql.dialects import (
+from lumida.graph.models import TypeFamily
+from lumida.ingestion.settings import ScanSettings
+from lumida.ingestion.sql.dialects import (
     PROFILES,
     UnsupportedDialectError,
     profile_for,
 )
-from ai_data_engineer.ingestion.sql.queries import _limited, as_text, rule_conditions, rule_rows
-from ai_data_engineer.ingestion.sql.types import type_family
-from ai_data_engineer.rules.spec import parse_spec
+from lumida.ingestion.sql.queries import _limited, as_text, rule_conditions, rule_rows
+from lumida.ingestion.sql.types import type_family
+from lumida.rules.spec import parse_spec
 
 DIALECTS: dict[str, Dialect] = {
     "mysql": mysql.dialect(),

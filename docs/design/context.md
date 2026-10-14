@@ -11,7 +11,7 @@ The engine learns *what the data does*; it can't know *what the business intends
 A few answers from the people who own the database close both gaps, and make the AI's proposals and explanations better.
 
 ## 2. Ask a few smart questions, don't make people fill forms
-`aide ask mydb` asks the top 10 unanswered questions in the terminal. Each is generated from what the engine measured and pre-filled with its best guess (press Enter to accept, `?` for don't know). `aide questions` / `aide answer KEY VALUE` do the same without the prompt.
+`lumida ask mydb` asks the top 10 unanswered questions in the terminal. Each is generated from what the engine measured and pre-filled with its best guess (press Enter to accept, `?` for don't know). `lumida questions` / `lumida answer KEY VALUE` do the same without the prompt.
 
 | Question | Asked when | A "yes" (or a value) becomes |
 |---|---|---|
@@ -45,7 +45,7 @@ A few answers from the people who own the database close both gaps, and make the
 | `unique` | no value shared by two rows (rows involved are counted) |
 | `allowed_values` | non-NULL values compared as text against the list |
 
-Only people (`aide ask`, `rules add`, dbt) create these kinds; the AI proposes only the comparison kinds.
+Only people (`lumida ask`, `rules add`, dbt) create these kinds; the AI proposes only the comparison kinds.
 
 **Wrong or outdated answers show up as findings in themselves**: *"you said email is unique; 32 duplicates"*.
 
@@ -54,7 +54,7 @@ Only people (`aide ask`, `rules add`, dbt) create these kinds; the AI proposes o
 **History:** every note keeps its history (`valid_to`). A partial unique index allows one current fact per subject and key.
 
 ## 4. Import what already exists: dbt
-`aide context import-dbt mydb models/schema.yml --schema analytics` maps:
+`lumida context import-dbt mydb models/schema.yml --schema analytics` maps:
 
 | In `schema.yml` | Becomes |
 |---|---|
@@ -67,11 +67,11 @@ It reads `tests:` and dbt 1.8+ `data_tests:`, with arguments given directly or u
 
 ## 5. Other commands
 ```
-aide context describe mydb shop.orders.status "Order lifecycle: placed -> paid -> shipped"
-aide context set mydb shop.payments --critical 3
-aide context set mydb reporting.daily_sales --deadline 26 --clock loaded_at
-aide context set mydb - --closed sun
-aide context show mydb
+lumida context describe mydb shop.orders.status "Order lifecycle: placed -> paid -> shipped"
+lumida context set mydb shop.payments --critical 3
+lumida context set mydb reporting.daily_sales --deadline 26 --clock loaded_at
+lumida context set mydb - --closed sun
+lumida context show mydb
 ```
 
 ## 6. Proof on the lab

@@ -1,7 +1,8 @@
-# AI Data Engineer — project guide for Claude
+# Lumida — project guide for Claude
 
-**Current stage:** Stage 2.6–2.7 ✅ (2026-10-11): personal-data map + PII in unexpected places (`aide pii`, nightly `semantic` step); **context from people**: `aide ask` (generated questions → `not_null` / `unique` / `allowed_values` rules, freshness deadlines, closed weekdays, criticality-weighted health), `aide context …`, dbt `schema.yml` import. Stage 3 ✅ (283+ tests, CI green on GitHub). **Next:** retire the leaked key `aide_rsa_key.p8` + Snowflake smoke run (user's part, steps in chat 2026-10-11; trial expires ~2026-11-03) → **Stage 4 plan** (open question: web UI inside the self-hosted image vs separate app; recommended: inside, for v1). Plain-language overview: [`docs/guide/how_it_works.md`](docs/guide/how_it_works.md). Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md), [`detection`](docs/design/detection.md), [`lifecycle_health_alerts`](docs/design/lifecycle_health_alerts.md), [`ai_rules`](docs/design/ai_rules.md), [`ai_assist`](docs/design/ai_assist.md), [`row_outliers`](docs/design/row_outliers.md), [`stage3_databases`](docs/design/stage3_databases.md), [`semantic_pii`](docs/design/semantic_pii.md), [`context`](docs/design/context.md); DB setup: [`databases`](docs/setup/databases.md).
+**Current stage:** Stage 2.6–2.7 ✅ (2026-10-11): personal-data map + PII in unexpected places (`lumida pii`, nightly `semantic` step); **context from people**: `lumida ask` (generated questions → `not_null` / `unique` / `allowed_values` rules, freshness deadlines, closed weekdays, criticality-weighted health), `lumida context …`, dbt `schema.yml` import. Stage 3 ✅ (283+ tests, CI green on GitHub). **Next:** retire the leaked key `aide_rsa_key.p8` + Snowflake smoke run (user's part, steps in chat 2026-10-11; trial expires ~2026-11-03) → **Stage 4 plan** (open question: web UI inside the self-hosted image vs separate app; recommended: inside, for v1). Plain-language overview: [`docs/guide/how_it_works.md`](docs/guide/how_it_works.md). Designs: [`metadata_store`](docs/design/metadata_store.md), [`test_lab`](docs/design/test_lab.md), [`postgres_adapter`](docs/design/postgres_adapter.md), [`relationship_discovery`](docs/design/relationship_discovery.md), [`detection`](docs/design/detection.md), [`lifecycle_health_alerts`](docs/design/lifecycle_health_alerts.md), [`ai_rules`](docs/design/ai_rules.md), [`ai_assist`](docs/design/ai_assist.md), [`row_outliers`](docs/design/row_outliers.md), [`stage3_databases`](docs/design/stage3_databases.md), [`semantic_pii`](docs/design/semantic_pii.md), [`context`](docs/design/context.md); DB setup: [`databases`](docs/setup/databases.md).
 
+**Name:** **Lumida** ("light on your data"; chosen 2026-10-14, may still change; the web site will explain the meaning). Command `lumida`, package `lumida`, settings prefix `LUMIDA_` (pre-rename `AIDE_*` names still read). Formerly *AI Data Engineer* / `aide`.
 **Environment:** Python 3.12 (conda env `py312`). Docker Desktop installed (2026-10-04). Git: `origin` = github.com/Rohan708/AI-DI-PLATFORM, work on `main` (since 2026-10-11; `latest` kept in sync).
 **Collaboration:** Claude proposes plans and writes code only after approval; the user runs installs/tests and Claude gives exact commands.
 
@@ -59,7 +60,7 @@ Pitch: point it at any database, however messy, and it tells you what's wrong, w
 ## Tech stack
 Python 3.12 · PostgreSQL (metadata store + first target) · SQLAlchemy 2.x · Alembic · pydantic-settings · pytest + testcontainers · ruff · mypy (strict) · pre-commit · pip + `pyproject.toml` · Makefile · GitHub Actions · sqlglot · (later) scikit-learn for outliers, an LLM API under the `reasoning` extra, FastAPI.
 
-Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests/unit` (no Docker) and `tests/integration` (testcontainers). **Test file names must be unique across both folders** (mypy treats them as top-level modules): unit files use a `_logic` suffix, e.g. `test_detection_logic.py` vs `integration/test_detection.py`.
+Layout: src-layout, package `lumida`, one subpackage per layer; `tests/unit` (no Docker) and `tests/integration` (testcontainers). **Test file names must be unique across both folders** (mypy treats them as top-level modules): unit files use a `_logic` suffix, e.g. `test_detection_logic.py` vs `integration/test_detection.py`.
 
 ## Working process
 - One step at a time. Every step has a **"done when"** and ends with passing tests before the next starts.
@@ -103,8 +104,8 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - Rename detection (a rename currently looks like drop + add) — decide with real data in 1.5/1.6.
 - Job/ETL-run tracking (ADR 0002, superseded) returns with query-log reading in Stage 1.4+.
 - Lab sources must be registered with `--exclude-schemas aide_lab` (the lab's bookkeeping schema).
-- On Windows with Smart App Control, `aide.exe` and mypy's DLL can be blocked; use `python -m ai_data_engineer …` and the pure-Python mypy install (docs/setup/local_dev.md).
-- History must be recorded in time order: before re-running a lab plan on the same source, `aide source remove NAME --yes` (1.6).
+- On Windows with Smart App Control, `lumida.exe` and mypy's DLL can be blocked; use `python -m lumida …` and the pure-Python mypy install (docs/setup/local_dev.md).
+- History must be recorded in time order: before re-running a lab plan on the same source, `lumida source remove NAME --yes` (1.6).
 - Views are described but not profiled (cost); revisit with per-source opt-in.
 - Discovery settings are global defaults (`discovery/settings.py`); add per-source overrides. Composite links only found with identical column names.
 - Orphan checks run on proposed relationships only at confidence >= 0.9; without `pg_stat_statements`, integer links rarely reach that (no query-log signal) — document for customers.
@@ -116,4 +117,5 @@ Layout: src-layout, package `ai_data_engineer`, one subpackage per layer; `tests
 - Stage 3: generic adapter samples the *first* N rows above 1M (not random); SQL Server has no session statement timeout; DB health is Postgres-only; reconciliation compares aggregates only (key-level hash comparison planned); Oracle/SQL Server verified only by SQL compilation until a real run.
 - Semantic/PII (2.6): lexical patterns only (no Luhn check), no detection of names/addresses/birth dates from values (needs opt-in AI), SQL Server unsupported (no regex), first 10k rows per table.
 - Context (2.7): no status-transition rules (need row-change history); terminal questions only (web form in Stage 4); AI doesn't draft descriptions yet; deadlines need a time column that moves.
-- Migrations live in `src/ai_data_engineer/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).
+- Rename (2026-10-14): kept on purpose — local DB user/name `aide` (docker-compose, `.env`), Snowflake objects `AIDE_SVC` / `AIDE_WH` / `AIDE_READONLY`, `scripts/` role names (`aide_readonly`), the lab's bookkeeping schema `aide_lab`, decision records. GitHub repo still named `AI-DI-PLATFORM` (rename in GitHub settings; redirects).
+- Migrations live in `src/lumida/migrations/` without `__init__.py`; make sure they ship in the Docker image when packaging (Stage 4).

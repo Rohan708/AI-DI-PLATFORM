@@ -1,7 +1,7 @@
 # Design: personal data, semantic checks (Stage 2.6, anomaly category 8)
 
 **Status:** code written 2026-10-11.
-**Code:** `semantic/` (patterns, judging, runner, `aide pii`), `ingestion/sql/pii.py` (the in-database count, used by both adapters). It runs as the `semantic` step of `aide run`, or with `aide pii NAME`.
+**Code:** `semantic/` (patterns, judging, runner, `lumida pii`), `ingestion/sql/pii.py` (the in-database count, used by both adapters). It runs as the `semantic` step of `lumida run`, or with `lumida pii NAME`.
 
 ## 1. What it answers
 1. **Where does personal data live?** A map of columns that hold email addresses, phone numbers, card numbers, IBANs, IP addresses, US SSNs, Indian PAN and Aadhaar numbers. That's what GDPR, DPDP and SOC 2 questionnaires ask for, and few teams can answer it for a legacy database.

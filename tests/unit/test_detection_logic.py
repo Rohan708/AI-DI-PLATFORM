@@ -5,13 +5,13 @@ from datetime import date
 
 import pytest
 
-from ai_data_engineer.detection.checks.structural import _indexed
-from ai_data_engineer.detection.checks.values import looks_like_variant
-from ai_data_engineer.detection.stats import robust_z
-from ai_data_engineer.graph.models import FindingCategory
-from ai_data_engineer.lab.answer_key import AnswerKey, ExpectedAnomaly
-from ai_data_engineer.lab.schema import BASELINE_ISSUES
-from ai_data_engineer.lab.scorer import FoundFinding, is_knock_on, score
+from lumida.detection.checks.structural import _indexed
+from lumida.detection.checks.values import looks_like_variant
+from lumida.detection.stats import robust_z
+from lumida.graph.models import FindingCategory
+from lumida.lab.answer_key import AnswerKey, ExpectedAnomaly
+from lumida.lab.schema import BASELINE_ISSUES
+from lumida.lab.scorer import FoundFinding, is_knock_on, score
 
 
 def test_robust_z_uses_a_spread_floor_for_flat_history() -> None:
@@ -133,7 +133,7 @@ def test_baseline_issue_catalog() -> None:
     ],
 )
 def test_loads_in_batches(maxima: list[str], batch: bool) -> None:
-    from ai_data_engineer.detection.checks.timeseries import loads_in_batches
+    from lumida.detection.checks.timeseries import loads_in_batches
 
     assert loads_in_batches(maxima, tolerance_minutes=60) is batch
 
@@ -154,13 +154,13 @@ def test_loads_in_batches(maxima: list[str], batch: bool) -> None:
     ],
 )
 def test_volume_drop_allows_for_count_noise(added: int, usual: float, drop: bool) -> None:
-    from ai_data_engineer.detection.checks.timeseries import is_volume_drop
+    from lumida.detection.checks.timeseries import is_volume_drop
 
     assert is_volume_drop(added, usual, ratio=0.6, noise_sigmas=3.0) is drop
 
 
 def test_volume_baseline_prefers_the_same_weekday() -> None:
-    from ai_data_engineer.detection.checks.timeseries import volume_baseline
+    from lumida.detection.checks.timeseries import volume_baseline
 
     # Mondays are quiet (22), other days busy (40); one earlier Monday is enough.
     past = [(0, 22), (1, 40), (2, 41), (3, 40), (4, 45), (5, 30), (6, 25)]
@@ -173,10 +173,10 @@ def test_volume_baseline_prefers_the_same_weekday() -> None:
 def test_row_outlier_columns_are_measures_not_keys() -> None:
     import uuid
 
-    from ai_data_engineer.detection.rows import candidate_columns
-    from ai_data_engineer.discovery.catalog import Catalog, ColumnInfo, TableInfo
-    from ai_data_engineer.graph.models import DataSource, TypeFamily
-    from ai_data_engineer.rules.spec import Link
+    from lumida.detection.rows import candidate_columns
+    from lumida.discovery.catalog import Catalog, ColumnInfo, TableInfo
+    from lumida.graph.models import DataSource, TypeFamily
+    from lumida.rules.spec import Link
 
     def col(name: str, family: TypeFamily, distinct: int = 3) -> ColumnInfo:
         return ColumnInfo(uuid.uuid4(), name, family, family.value, row_count=1000,

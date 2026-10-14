@@ -1,11 +1,11 @@
 # Relationship discovery, relationship checks & auto-documentation (Stage 1.4)
 
-*Code: `src/ai_data_engineer/discovery/` (+ `ingestion/postgres/relationships.py`, `detection/recording.py`). Commands: `aide discover`, `aide relationships`, `aide docs`.*
+*Code: `src/lumida/discovery/` (+ `ingestion/postgres/relationships.py`, `detection/recording.py`). Commands: `lumida discover`, `lumida relationships`, `lumida docs`.*
 
 Most legacy databases declare few or none of their foreign keys, and name them inconsistently (`cust_no`, `CUSTID`, `client_ref`). This stage finds the real links from **evidence**, explains each one, and uses them for the first findings (orphan rows) and for generated documentation. It is fully deterministic: no AI calls. AI review of ambiguous cases comes in Stage 2.
 
 ```
-aide discover shopco
+lumida discover shopco
   1. load what the latest scan knows (tables, columns, measurements, keys)
   2. declared FKs                         -> relationships (certain)
   3. read the query log                   -> joins the application really runs
@@ -105,9 +105,9 @@ Every relationship stores its **signals** (`value_inclusion`, `name_match`, `que
 | no longer supported | closed (`valid_to`), unless a person reviewed it; history stays queryable |
 
 ```
-aide relationships list shopco [--all]
-aide relationships confirm 3fa2c1d0 [--by alice]
-aide relationships reject  91b0e7aa
+lumida relationships list shopco [--all]
+lumida relationships confirm 3fa2c1d0 [--by alice]
+lumida relationships reject  91b0e7aa
 ```
 
 ## 5. Relationship checks: the first findings
@@ -122,7 +122,7 @@ Findings are written through `detection/recording.py`:
 - The full lifecycle (alerts, reopening) comes in Stage 1.6.
 
 ## 6. Auto-documentation
-`aide docs shopco [--out DIR]` writes `generated_docs/shopco/` (git-ignored):
+`lumida docs shopco [--out DIR]` writes `generated_docs/shopco/` (git-ignored):
 
 | File | Contents |
 |---|---|

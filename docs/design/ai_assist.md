@@ -22,9 +22,9 @@ Both features are **advice**. Neither changes a status, opens or closes a findin
 
 **Commands:**
 ```
-aide relationships review shopco          # ask; prints the opinions, clear ones first
-aide relationships list shopco            # undecided links show  [AI: likely 0.85]
-aide relationships confirm|reject ID      # a person decides, as before
+lumida relationships review shopco          # ask; prints the opinions, clear ones first
+lumida relationships list shopco            # undecided links show  [AI: likely 0.85]
+lumida relationships confirm|reject ID      # a person decides, as before
 ```
 
 ## 2. Finding explanations (2.4)
@@ -44,13 +44,13 @@ aide relationships confirm|reject ID      # a person decides, as before
 
 **Where it goes:** `finding.evidence["explanation"]`, with provider, model, time and **the title it explained**. The finding's own `confidence` stays NULL (it's deterministic).
 - Nightly refreshes keep the explanation (`KEPT_EVIDENCE_KEYS` in `recording.py`).
-- Titles quote the numbers, so if the title has changed, `aide finding show` marks the explanation "*written for an earlier version of this finding*", and `aide explain` picks the finding up again.
+- Titles quote the numbers, so if the title has changed, `lumida finding show` marks the explanation "*written for an earlier version of this finding*", and `lumida explain` picks the finding up again.
 
 **Commands:**
 ```
-aide explain shopco --limit 5     # the worst open findings without an up-to-date explanation
-aide finding explain ID           # one finding
-aide finding show ID              # includes the explanation
+lumida explain shopco --limit 5     # the worst open findings without an up-to-date explanation
+lumida finding explain ID           # one finding
+lumida finding show ID              # includes the explanation
 ```
 
 ## 3. Not in this step

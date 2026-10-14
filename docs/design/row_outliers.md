@@ -1,7 +1,7 @@
 # Design: row-level outliers (Stage 2.5)
 
 **Status:** ✅ tested 2026-10-11 (unit + integration; lab: planted rows caught, 0 false alarms).
-**Code:** `detection/rows.py` (which columns, findings), `ingestion/postgres/outliers.py` (the SQL). It runs as the `rows` step of `aide run`, or by hand with `aide outliers NAME`.
+**Code:** `detection/rows.py` (which columns, findings), `ingestion/postgres/outliers.py` (the SQL). It runs as the `rows` step of `lumida run`, or by hand with `lumida outliers NAME`.
 
 ## 1. What it catches
 Single rows with a value **far above everything else in their column**: an order line with quantity 500 where 1–3 is normal, an order 100× the usual total, a price typed in cents instead of dollars. Column-level checks only see that the maximum moved. This check says **how many rows** and **which ones** (their primary keys).

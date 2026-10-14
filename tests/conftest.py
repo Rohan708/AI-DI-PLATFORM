@@ -15,8 +15,8 @@ from alembic.config import Config
 from sqlalchemy import Engine, create_engine, make_url, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.graph.models import DataSource, IngestionRun, SourceKind, Tenant
+from lumida.db import create_db_engine
+from lumida.graph.models import DataSource, IngestionRun, SourceKind, Tenant
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 

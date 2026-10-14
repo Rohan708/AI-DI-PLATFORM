@@ -1,4 +1,4 @@
-# How AI Data Engineer works: the whole engine in plain language
+# How Lumida works: the whole engine in plain language
 
 *Written for understanding, not for coding. Every number comes from real runs on the ShopCo test lab. For the "why" and the sales story see [`../product/vision_and_roadmap.md`](../product/vision_and_roadmap.md) and [`../product/sales_and_logic.md`](../product/sales_and_logic.md); for exact rules see the design docs linked in each section.*
 
@@ -6,7 +6,7 @@
 
 ## The one-minute version
 
-Every night `aide run shopco` does these things:
+Every night `lumida run shopco` does these things:
 
 ```
 1. SCAN      read the database's structure and take measurements          (read-only)
@@ -18,7 +18,7 @@ Every night `aide run shopco` does these things:
 6. ALERT     tell people about NEW problems, once, in one message
 ```
 
-Separately, and only when asked (`aide rules propose shopco`), the **AI** reads the structure and statistics and *suggests* business rules for a person to approve (§6).
+Separately, and only when asked (`lumida rules propose shopco`), the **AI** reads the structure and statistics and *suggests* business rules for a person to approve (§6).
 
 It never writes to the customer's database. Everything it learns goes into **its own** database, the *metadata store*.
 
@@ -37,7 +37,7 @@ It never writes to the customer's database. Everything it learns goes into **its
 - Every query runs in a transaction the database itself makes **read-only**, so even a bug in our code can't write.
 - Each query has a 30-second limit and a 2-second lock limit.
 - Big tables are **sampled**.
-- The customer's DBA sees our queries labelled `aide`.
+- The customer's DBA sees our queries labelled `lumida`.
 
 **Memory:** each table and column gets a permanent ID card (its *identity*). Structure changes are kept as *versions*, and measurements are kept as a *daily series*.
 
@@ -67,12 +67,12 @@ These combine into a **confidence**:
 **Result on ShopCo:** **15 of 15** relationships found, **0 wrong**.
 
 **People decide:**
-- `aide relationships confirm | reject` records the decision, and discovery never overrides it.
+- `lumida relationships confirm | reject` records the decision, and discovery never overrides it.
 - Joins seen in the query log are **remembered**, so a database restart doesn't wipe the evidence.
 
 **Two things relationships make possible:**
 - the first integrity check: *"56 rows in shop.orders point to missing shop.customers rows"*, with the IDs attached
-- the auto-generated **data dictionary and relationship map** (`aide docs`)
+- the auto-generated **data dictionary and relationship map** (`lumida docs`)
 
 ## 3. Detect: "is this normal *for this column*?"
 *Design: [detection.md](../design/detection.md)*
@@ -130,7 +130,7 @@ Some problems look normal column by column. A parcel shipped two days *before* i
 **Who does what:**
 1. **The AI proposes.** It gets the table and column names, types, row counts, null rates and number ranges, plus the relationships we discovered. **It never sees row values** (no names, emails, or text of any kind). It answers with rules like *"shipments.shipped_at ≥ orders.order_date (via ord_id → order_id)"*, each with a confidence and a one-sentence reason.
 2. **The engine checks the proposal.** Do these tables and columns exist? Can a date be compared with that column? Does the join follow a relationship we actually know? Anything that fails is thrown out and listed, never stored.
-3. **A person decides.** `aide rule approve ID` or `aide rule reject ID --note "we pre-ship"`. A rejected rule is never proposed again.
+3. **A person decides.** `lumida rule approve ID` or `lumida rule reject ID --note "we pre-ship"`. A rejected rule is never proposed again.
 4. **The engine enforces.** Every night, each approved rule runs as **plain SQL**, with no AI: *"8 rows in shop.shipments break the rule … (IDs attached)"*.
 
 Rules can only take three safe shapes: compare two columns (also across a relationship), compare a column with a number, and "a total equals the sum of its lines". The AI can't write SQL, so a bad suggestion can at most be a wrong rule that a person rejects.
@@ -138,21 +138,21 @@ Rules can only take three safe shapes: compare two columns (also across a relati
 **Unusual individual rows** ([design](../design/row_outliers.md)), with no AI involved: every night the database itself works out each amount or quantity column's typical value. It reports rows that are **both** at least 20× that **and** far outside the column's normal spread (*"3 rows in shop.order_items.quantity are far above normal (up to 500x the typical 1)"*), with their IDs. The values never leave the database.
 
 **Personal data in the wrong place** ([design](../design/semantic_pii.md)), with no AI involved. The database itself counts how many values in each text column look like email addresses, phone numbers, card numbers, IBANs, IP addresses or national IDs (US SSN, Indian PAN and Aadhaar). It never reads them out. The result:
-- a **map of where personal data lives** (`aide pii shopco`)
+- a **map of where personal data lives** (`lumida pii shopco`)
 - a **finding** when some turns up where the column's name doesn't say so: *"8 values in legacy.CUST_MASTER.CUST_NM look like email addresses"*. That's a copy that leaks through exports and gets missed by deletion requests.
 
 **Two more kinds of AI help** ([design](../design/ai_assist.md)), both advice only:
 - **Second opinion on unsure links.** When discovery is only "probably" sure two tables are linked (confidence 0.6–0.9), the AI looks at the same evidence a person would and says *likely*, *unlikely* or *unsure*, with a reason. It sorts your review list; it never confirms anything itself.
-- **Plain-language explanations.** `aide explain shopco` adds what a finding means, what it can break (connected tables), likely causes and what to check. Strict rule: **the explanation may only quote numbers that are in the evidence.** If the AI invents one (*"about 2,300 orders a week"*), the explanation is thrown away.
+- **Plain-language explanations.** `lumida explain shopco` adds what a finding means, what it can break (connected tables), likely causes and what to check. Strict rule: **the explanation may only quote numbers that are in the evidence.** If the AI invents one (*"about 2,300 orders a week"*), the explanation is thrown away.
 
-**Provider:** switchable. Gemini first (`AIDE_LLM_PROVIDER=gemini` + key in `.env`), with others plugging in behind the same interface. With no key, every other feature still works.
+**Provider:** switchable. Gemini first (`LUMIDA_LLM_PROVIDER=gemini` + key in `.env`), with others plugging in behind the same interface. With no key, every other feature still works.
 
 ---
 
 ## 7. Tell it what the database means (Stage 2.7)
 *Design: [context.md](../design/context.md)*
 
-The engine learns what the data *does*. Only the people who own it know what it's *meant* to do. So the engine asks, but only a few questions, each pre-filled with its best guess (`aide ask mydb`):
+The engine learns what the data *does*. Only the people who own it know what it's *meant* to do. So the engine asks, but only a few questions, each pre-filled with its best guess (`lumida ask mydb`):
 
 - *"`shop.addresses.postal_code` is never empty today, but the database allows it. Must it always be filled?"* yes
 - *"`shop.addresses.country` has these values today: CA, DE, GB, US. Is that the full list?"* yes
@@ -166,7 +166,7 @@ The engine learns what the data *does*. Only the people who own it know what it'
 - **Smarter priorities.** Problems on critical tables weigh double in the health score.
 - **Better AI and docs.** Your descriptions go into rule proposals, explanations and the data dictionary.
 
-**Already documented in dbt?** `aide context import-dbt mydb schema.yml` brings in descriptions, `not_null` / `unique` / `accepted_values` tests and relationships, so nobody types them twice.
+**Already documented in dbt?** `lumida context import-dbt mydb schema.yml` brings in descriptions, `not_null` / `unique` / `accepted_values` tests and relationships, so nobody types them twice.
 
 ---
 
@@ -174,7 +174,7 @@ The engine learns what the data *does*. Only the people who own it know what it'
 *Design: [stage3_databases.md](../design/stage3_databases.md) · setup: [databases.md](../setup/databases.md)*
 
 - **Any SQL database.** MySQL, SQL Server, Oracle and Snowflake share one adapter. A small table of per-database differences covers how to make the session read-only, where the row estimates and the query log live, and three function names. Everything above the adapter (discovery, detection, rules, outliers, alerts) is the same engine.
-- **Does the copy match?** Pair a source with its copy (`aide reconcile add app-vs-dw --left app --right dw`). Every night the two latest scans are compared table by table: *"dw.orders has 7 fewer rows than shop.orders"*, *"NULLs 0.00% vs 8.00% in addresses.postal_code"*. If rows are missing, that's one finding, not twenty (column totals would all differ too).
+- **Does the copy match?** Pair a source with its copy (`lumida reconcile add app-vs-dw --left app --right dw`). Every night the two latest scans are compared table by table: *"dw.orders has 7 fewer rows than shop.orders"*, *"NULLs 0.00% vs 8.00% in addresses.postal_code"*. If rows are missing, that's one finding, not twenty (column totals would all differ too).
 - **Is the database itself healthy?** (Postgres for now.) It flags big indexes nobody uses, tables full of dead rows, slow repeated queries, sessions stuck in an open transaction, and ID sequences close to running out. It never shows query text that could contain values.
 
 ---
@@ -208,7 +208,7 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 1.3 | Postgres scanning (read-only, in-database measurements) | ✅ |
 | 1.4 | Relationship discovery + auto-docs | ✅ 15/15 |
 | 1.5 | Detection, 12 checks | ✅ 11/11 caught |
-| 1.6 | Lifecycle, health score, alerts, `aide run` | ✅ lab: 0 false alarms, quiet nights silent |
+| 1.6 | Lifecycle, health score, alerts, `lumida run` | ✅ lab: 0 false alarms, quiet nights silent |
 | 2.1–2.2 | AI proposes business rules (*"ship date must be after order date"*, *"invoice total = sum of lines"*); humans approve; the engine checks them as plain SQL | ✅ Gemini proposed 12 of 13 hidden rules; approved rules caught both planted problems |
 | 2.3–2.4 | AI second opinion on unsure relationships; plain-language explanations with a number guard | ✅ Gemini: 3/3 unsure links judged correctly, 3/3 explanations passed the number guard |
 | 2.6 | Personal data map + PII in unexpected places (counted inside the database) | ✅ lab: planted emails found, 0 false alarms |

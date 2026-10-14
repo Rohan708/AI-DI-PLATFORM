@@ -37,7 +37,7 @@ db-up:
 db-down:
 	docker compose down
 
-# Apply all migrations to the database in AIDE_DATABASE_URL (.env).
+# Apply all migrations to the database in LUMIDA_DATABASE_URL (.env).
 migrate:
 	alembic upgrade head
 

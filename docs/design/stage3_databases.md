@@ -35,7 +35,7 @@ What differs per database lives in one table, `ingestion/sql/dialects.py`:
 
 ## 2. Reconciliation (3.2)
 **The question:** "the warehouse copy should match the app database. Does it?"
-- A **pair** (`aide reconcile add NAME --left app --right warehouse`) maps tables by name. Use `--schema-map shop=analytics` when the copy renames a schema, or `--table shop.orders=dw.fct_orders` for explicit tables. With an explicit list, a missing copy is itself a finding.
+- A **pair** (`lumida reconcile add NAME --left app --right warehouse`) maps tables by name. Use `--schema-map shop=analytics` when the copy renames a schema, or `--table shop.orders=dw.fct_orders` for explicit tables. With an explicit list, a missing copy is itself a finding.
 - **No extra queries.** Both sides were measured by their own nightly scans, so reconciliation compares the stored measurements. It works across any two adapters (Postgres app vs Snowflake warehouse).
 
 **The rules** (`reconcile/compare.py`, all tolerances in `ReconcileSettings`):
@@ -52,7 +52,7 @@ What differs per database lives in one table, `ingestion/sql/dialects.py`:
 - **One finding, not a cascade:** when the row counts differ, the columns aren't compared, because every total would differ too.
 - **Timing:** scans more than 26 hours apart aren't compared, since the copy may simply be behind.
 - **Findings:** category `cross_system`, check `reconcile_<metric>`. They belong to the left source, name both tables, and resolve when the difference is gone.
-- **Schedule:** `aide run` compares every pair the source belongs to (the `reconcile` step).
+- **Schedule:** `lumida run` compares every pair the source belongs to (the `reconcile` step).
 
 ## 3. Database health (3.3, Postgres first)
 These problems are with the database rather than the data. Readings come from Postgres' statistics views: names, counts, sizes and durations only.
@@ -67,7 +67,7 @@ These problems are with the database rather than the data. Readings come from Po
 
 **How readings behave:**
 - Each reading runs in its own transaction, and reports whether it ran. Only readings that ran can resolve findings, so a missing extension or permission never closes a finding by mistake.
-- It runs as the `dbhealth` step of `aide run`, or with `aide dbhealth NAME`.
+- It runs as the `dbhealth` step of `lumida run`, or with `lumida dbhealth NAME`.
 - Other databases return "not yet".
 
 ## 4. Nightly order

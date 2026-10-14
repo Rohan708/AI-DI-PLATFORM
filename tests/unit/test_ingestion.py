@@ -6,13 +6,13 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from ai_data_engineer.graph.models import AssetKind, TypeFamily
-from ai_data_engineer.graph.versioning import AssetObservation, ColumnObservation
-from ai_data_engineer.ingestion.base import ColumnMeasurement, DiscoveredTable
-from ai_data_engineer.ingestion.connections import ConnectionRefError, resolve_connection_url
-from ai_data_engineer.ingestion.postgres.profiling import build_profile_query, quote_ident
-from ai_data_engineer.ingestion.postgres.types import postgres_type_family
-from ai_data_engineer.ingestion.settings import DEFAULT_STATEMENT_TIMEOUT_MS, ScanSettings
+from lumida.graph.models import AssetKind, TypeFamily
+from lumida.graph.versioning import AssetObservation, ColumnObservation
+from lumida.ingestion.base import ColumnMeasurement, DiscoveredTable
+from lumida.ingestion.connections import ConnectionRefError, resolve_connection_url
+from lumida.ingestion.postgres.profiling import build_profile_query, quote_ident
+from lumida.ingestion.postgres.types import postgres_type_family
+from lumida.ingestion.settings import DEFAULT_STATEMENT_TIMEOUT_MS, ScanSettings
 
 
 @pytest.mark.parametrize(
@@ -66,25 +66,25 @@ def test_schema_include_exclude() -> None:
 
 
 def test_connection_ref_from_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("AIDE_TEST_DB", "postgresql+psycopg://u:p@h/db")
-    assert resolve_connection_url("AIDE_TEST_DB", env_file=tmp_path / ".env") == (
+    monkeypatch.setenv("LUMIDA_TEST_DB", "postgresql+psycopg://u:p@h/db")
+    assert resolve_connection_url("LUMIDA_TEST_DB", env_file=tmp_path / ".env") == (
         "postgresql+psycopg://u:p@h/db"
     )
 
 
 def test_connection_ref_from_env_file(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    monkeypatch.delenv("AIDE_TEST_DB", raising=False)
+    monkeypatch.delenv("LUMIDA_TEST_DB", raising=False)
     env_file = tmp_path / ".env"
-    env_file.write_text("AIDE_TEST_DB=postgresql+psycopg://from-file/db\n", encoding="utf-8")
-    assert resolve_connection_url("AIDE_TEST_DB", env_file=env_file).endswith("from-file/db")
+    env_file.write_text("LUMIDA_TEST_DB=postgresql+psycopg://from-file/db\n", encoding="utf-8")
+    assert resolve_connection_url("LUMIDA_TEST_DB", env_file=env_file).endswith("from-file/db")
 
 
 def test_missing_connection_ref_fails_clearly(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.delenv("AIDE_NOPE", raising=False)
-    with pytest.raises(ConnectionRefError, match="AIDE_NOPE"):
-        resolve_connection_url("AIDE_NOPE", env_file=tmp_path / ".env")
+    monkeypatch.delenv("LUMIDA_NOPE", raising=False)
+    with pytest.raises(ConnectionRefError, match="LUMIDA_NOPE"):
+        resolve_connection_url("LUMIDA_NOPE", env_file=tmp_path / ".env")
     with pytest.raises(ConnectionRefError):
         resolve_connection_url(None)
 
@@ -149,3 +149,14 @@ def test_null_rate_handles_empty_tables() -> None:
     empty = ColumnMeasurement("x", 0, 0, 0, False, None, None)
     assert empty.null_rate is None
     assert ColumnMeasurement("x", 200, 50, 10, False, None, None).null_rate == 0.25
+
+
+def test_connection_refs_find_the_pre_rename_name(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text("AIDE_SHOP_URL=postgresql+psycopg://old/db\n", encoding="utf-8")
+    monkeypatch.delenv("LUMIDA_SHOP_URL", raising=False)
+    monkeypatch.delenv("AIDE_SHOP_URL", raising=False)
+    assert resolve_connection_url("LUMIDA_SHOP_URL", env_file=env_file).endswith("old/db")
+    assert resolve_connection_url("AIDE_SHOP_URL", env_file=env_file).endswith("old/db")

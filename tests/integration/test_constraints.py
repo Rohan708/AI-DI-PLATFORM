@@ -8,7 +8,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.graph.models import (
+from lumida.graph.models import (
     AssetKind,
     AssetVersion,
     ColumnProfile,
@@ -28,8 +28,8 @@ from ai_data_engineer.graph.models import (
     TypeFamily,
     finding_fingerprint,
 )
-from ai_data_engineer.graph.queries import get_current_structure
-from ai_data_engineer.graph.versioning import AssetObservation, ColumnObservation, record_asset
+from lumida.graph.queries import get_current_structure
+from lumida.graph.versioning import AssetObservation, ColumnObservation, record_asset
 
 T0 = datetime(2026, 1, 1, tzinfo=UTC)
 

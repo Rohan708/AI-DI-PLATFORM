@@ -10,7 +10,7 @@ Some problems can't be found by statistics. A parcel shipped *before* it was ord
 
 ## 2. Flow
 ```
-aide rules propose shopco      (once, or when the schema changes)
+lumida rules propose shopco      (once, or when the schema changes)
    │  1. context: tables, columns, types, keys, row counts, null rates, distinct counts,
    │     numeric/date min-max, known relationships, existing rules      (no row values)
    │  2. LLM (Gemini) answers in our rule format, each with confidence + rationale
@@ -18,9 +18,9 @@ aide rules propose shopco      (once, or when the schema changes)
    │     joins follow a known relationship  → invalid ones dropped and listed
    │  4. stored as `proposed` (origin ai); duplicates and rejected-before skipped
    ▼
-aide rules list shopco  →  aide rule show ID  →  aide rule approve|reject ID --note "…"
+lumida rules list shopco  →  lumida rule show ID  →  lumida rule approve|reject ID --note "…"
    ▼
-aide run shopco  (nightly: scan → discover → rules → detect → health → alert)
+lumida run shopco  (nightly: scan → discover → rules → detect → health → alert)
       the `rules` step runs every `active` rule as read-only SQL → findings (business_rule)
 ```
 
@@ -63,12 +63,12 @@ Names are quoted with `quote_ident`, and the only values are bind parameters (`:
 The prompt itself isn't stored. Each proposal keeps the SHA-256 of the input it came from (`evidence.context_sha256`), plus the provider, model, rationale and confidence. A per-source opt-in to share sample values (to propose allowed-values rules, for example) is in the backlog.
 
 ## 6. Providers (`reasoning/llm.py`)
-One small interface, `complete_json(system, prompt) -> LLMReply`, selected by `AIDE_LLM_PROVIDER`:
+One small interface, `complete_json(system, prompt) -> LLMReply`, selected by `LUMIDA_LLM_PROVIDER`:
 
 | Provider | Setting | Notes |
 |---|---|---|
 | `none` (default) | n/a | AI features off; everything else works |
-| `gemini` | `AIDE_GEMINI_API_KEY`, optional `AIDE_LLM_MODEL` (default `gemini-2.5-flash`) | REST via the standard library; the key goes in a header, never the URL; JSON response mode; temperature 0.2 |
+| `gemini` | `LUMIDA_GEMINI_API_KEY`, optional `LUMIDA_LLM_MODEL` (default `gemini-2.5-flash`) | REST via the standard library; the key goes in a header, never the URL; JSON response mode; temperature 0.2 |
 
 Adding Claude, OpenAI or a local model takes one class plus one branch in `llm_from_settings`. Tests use a fake client and a faked `urlopen`, so there are no real calls.
 
@@ -80,7 +80,7 @@ Adding Claude, OpenAI or a local model takes one class plus one branch in `llm_f
 | `disabled` | `active` (enable) |
 | `rejected` | `proposed` (reconsider) |
 
-Every change is appended to `rule.evidence.review_history` (who, when, from, to, note). User-written rules (`aide rules add`) are validated the same way and start `active`.
+Every change is appended to `rule.evidence.review_history` (who, when, from, to, note). User-written rules (`lumida rules add`) are validated the same way and start `active`.
 
 ## 8. Rule findings (`rules/checks.py`)
 - One finding per rule (fingerprint = rule id), category `business_rule`, check `business_rule`, `rule_id` set.
@@ -101,7 +101,7 @@ Every change is appended to `rule.evidence.review_history` (who, when, from, to,
 | `share_numeric_ranges` | true |
 
 ## 10. Lab benchmark
-`HIDDEN_RULES` in `lab/schema.py` lists 13 rules that hold in clean ShopCo data but are declared nowhere: dates in order, amounts and quantities not negative, payments equal order totals, invoice totals equal the sum of their lines. `aide lab score` adds an **AI rule proposals** section when the source has AI rules:
+`HIDDEN_RULES` in `lab/schema.py` lists 13 rules that hold in clean ShopCo data but are declared nowhere: dates in order, amounts and quantities not negative, payments equal order totals, invoice totals equal the sum of their lines. `lumida lab score` adds an **AI rule proposals** section when the source has AI rules:
 - **recall:** hidden rules proposed / 13
 - how many proposals were approved and rejected
 - proposals outside the answer key. These aren't automatically wrong, because the key can't list every true rule, so the reviewer decides.
@@ -114,9 +114,9 @@ On the lab DB, it proposes most hidden rules with acceptable precision, and the 
 ## 12. Known limitations
 - The rule format has no expressions yet (`total_amount = sum(quantity * unit_price)`), no allowed-values or "status transition" rules (these need value sharing or history), and no conditional rules ("if status = shipped then shipped_at is not null").
 - Large schemas: the prompt includes at most 200 tables, with no chunking yet.
-- Rules aren't re-proposed automatically when the schema changes; run `aide rules propose` again.
+- Rules aren't re-proposed automatically when the schema changes; run `lumida rules propose` again.
 
 ## 13. Results log
 | Date | Run | Hidden rules proposed | Approved / rejected | Stage-2 caught | Notes |
 |---|---|---|---|---|---|
-| 2026-10-10 | shopco3 (lab `standard`, small, seed 42), Gemini `gemini-2.5-flash`, two `rules propose` runs | **12 / 13** | 21 / 4 | **2 / 2** | First run: 20 proposals, all valid, but every confidence 0.98–0.99 and no child-vs-parent comparisons except `paid_at`. **Prompt tweak:** "go through every relationship and compare dates/amounts" and "use the whole confidence range". Second run: 5 more (confidences 0.75–0.99), 1 invalid (a join through no known relationship, correctly refused). Never proposed: `shipments.shipped_at >= orders.order_date`, added by hand with `aide rules add`. Rejected on review: `daily_sales.orders_count/revenue > 0` (a day can have no sales), two price-equality rules (prices change over time). 22 active rules ran with **0 false alarms**; lab benchmark 13/13. |
+| 2026-10-10 | shopco3 (lab `standard`, small, seed 42), Gemini `gemini-2.5-flash`, two `rules propose` runs | **12 / 13** | 21 / 4 | **2 / 2** | First run: 20 proposals, all valid, but every confidence 0.98–0.99 and no child-vs-parent comparisons except `paid_at`. **Prompt tweak:** "go through every relationship and compare dates/amounts" and "use the whole confidence range". Second run: 5 more (confidences 0.75–0.99), 1 invalid (a join through no known relationship, correctly refused). Never proposed: `shipments.shipped_at >= orders.order_date`, added by hand with `lumida rules add`. Rejected on review: `daily_sales.orders_count/revenue > 0` (a day can have no sales), two price-equality rules (prices change over time). 22 active rules ran with **0 false alarms**; lab benchmark 13/13. |

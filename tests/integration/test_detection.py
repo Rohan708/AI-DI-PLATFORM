@@ -8,11 +8,11 @@ from typing import Any
 from sqlalchemy import Engine, func, select, text
 from sqlalchemy.orm import Session
 
-from ai_data_engineer.db import create_db_engine
-from ai_data_engineer.detection.runner import detect
-from ai_data_engineer.discovery.discover import discover
-from ai_data_engineer.discovery.settings import DiscoverySettings
-from ai_data_engineer.graph.models import (
+from lumida.db import create_db_engine
+from lumida.detection.runner import detect
+from lumida.discovery.discover import discover
+from lumida.discovery.settings import DiscoverySettings
+from lumida.graph.models import (
     AssetColumn,
     DataSource,
     Finding,
@@ -21,11 +21,11 @@ from ai_data_engineer.graph.models import (
     Relationship,
     RelationshipColumn,
 )
-from ai_data_engineer.ingestion.postgres import PostgresAdapter
-from ai_data_engineer.ingestion.scan import scan_source
-from ai_data_engineer.ingestion.settings import ScanSettings
-from ai_data_engineer.lab.runner import build_lab, inject, lab_scan_time, run_plan, tick
-from ai_data_engineer.lab.scorer import load_findings, load_relationships, score
+from lumida.ingestion.postgres import PostgresAdapter
+from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
+from lumida.lab.runner import build_lab, inject, lab_scan_time, run_plan, tick
+from lumida.lab.scorer import load_findings, load_relationships, score
 
 SETTINGS = ScanSettings(exclude_schemas=("aide_lab",))
 T1 = datetime(2026, 5, 1, 3, tzinfo=UTC)
