@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-label="Lumida">
+  <title>Lumida</title>
+  <defs>
+    <radialGradient id="g" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FFB547" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFB547" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g fill="#2A3354">
+    <rect x="6" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="44" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="6" y="25" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="25" width="14" height="14" rx="3.5"/>
+    <rect x="6" y="44" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="44" width="14" height="14" rx="3.5"/>
+    <rect x="44" y="44" width="14" height="14" rx="3.5"/>
+  </g>
+  <circle cx="51" cy="32" r="15" fill="url(#g)"/>
+  <rect x="44" y="25" width="14" height="14" rx="3.5" fill="#FFB547"/>
+  <!-- Wordmark; the dot of the i is a small lit cell. Text uses Space Grotesk (loaded by the
+       page); export to outlined paths before using this file outside the website. -->
+  <text x="78" y="46" font-family="'Space Grotesk', 'Inter', system-ui, sans-serif"
+        font-size="40" font-weight="600" letter-spacing="0.5" fill="#E6E9F2">lum<tspan>ı</tspan>da</text>
+  <rect x="163.5" y="14" width="7" height="7" rx="1.8" fill="#FFB547"/>
+</svg>

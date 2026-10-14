@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lumida — Light on your data</title>
+  <meta name="description" content="Lumida watches your databases every night, learns what normal looks like, and tells you what's wrong, what it breaks, and why — with evidence. Read-only, self-hosted.">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav" id="top">
+    <div class="wrap nav__inner">
+      <a class="brand" href="#top" aria-label="Lumida home">
+        <img src="assets/mark.svg" alt="" width="28" height="28">
+        <span class="wordmark">lum<span class="wordmark__i">ı</span>da</span>
+      </a>
+      <button class="nav__toggle" aria-expanded="false" aria-controls="nav-links" aria-label="Menu">
+        <span></span><span></span>
+      </button>
+      <nav id="nav-links" class="nav__links" aria-label="Main">
+        <a href="#how">How it works</a>
+        <a href="#problems">What it finds</a>
+        <a href="#security">Security</a>
+        <a href="https://github.com/Rohan708/Lumida" rel="noopener">GitHub</a>
+        <a class="btn btn--small btn--amber" href="#early-access">Get early access</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- Hero -------------------------------------------------------------------------- -->
+    <section class="hero">
+      <div class="wrap hero__inner">
+        <div class="hero__copy">
+          <p class="eyebrow">Data quality for messy databases</p>
+          <h1>Light on your&nbsp;data.</h1>
+          <p class="lede">Point Lumida at any database, however messy. It finds what's wrong, shows what it breaks, and tells you why. Every night, with evidence.</p>
+          <div class="hero__actions">
+            <a class="btn btn--amber" href="#early-access">Get early access</a>
+            <a class="btn btn--ghost" href="#how">See how it works</a>
+          </div>
+          <p class="hero__note">Read-only · Runs inside your network · No row values leave your database</p>
+        </div>
+
+        <figure class="scanner" aria-label="Lumida scanning a table and highlighting three problems">
+          <div class="scanner__bar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="scanner__title">shop.orders — nightly scan</span>
+          </div>
+          <div class="scanner__table" role="presentation">
+            <div class="row row--head"><span>order_id</span><span>cust_no</span><span>total</span><span>postal_code</span></div>
+            <div class="row"><span>10421</span><span>882</span><span>129.90</span><span>94107</span></div>
+            <div class="row"><span>10422</span><span data-find="0">10000412</span><span>48.00</span><span>10115</span></div>
+            <div class="row"><span>10423</span><span>91</span><span>312.40</span><span data-find="1">∅</span></div>
+            <div class="row"><span>10424</span><span>455</span><span>75.10</span><span>SW1A</span></div>
+            <div class="row"><span>10425</span><span>17</span><span data-find="2">31240.00</span><span>75001</span></div>
+            <div class="row"><span>10426</span><span>662</span><span>19.99</span><span>02134</span></div>
+            <div class="beam" aria-hidden="true"></div>
+          </div>
+          <ul class="scanner__chips">
+            <li data-chip="0"><b>56 orders</b> point to customers that don't exist</li>
+            <li data-chip="1"><b>NULLs jumped</b> from 0.0% to 8.0%</li>
+            <li data-chip="2"><b>3 rows</b> are 250× the usual</li>
+          </ul>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Works with ---------------------------------------------------------------------- -->
+    <section class="works" aria-label="Supported databases">
+      <div class="wrap works__inner">
+        <span class="works__label">Works with</span>
+        <ul class="works__list">
+          <li>PostgreSQL</li><li>MySQL</li><li>SQL Server</li><li>Oracle</li><li>Snowflake</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Problem ------------------------------------------------------------------------- -->
+    <section class="section">
+      <div class="wrap">
+        <h2 class="reveal">Every database has problems nobody wrote down.</h2>
+        <div class="cards cards--3">
+          <article class="card reveal">
+            <h3>Hidden links</h3>
+            <p>Tables point to each other through columns like <code>cust_no</code> or <code>ITEM_CD</code>, but nobody declared it. So nothing checks it.</p>
+          </article>
+          <article class="card reveal">
+            <h3>Silent breakage</h3>
+            <p>A nightly load runs halfway, a form stops saving postal codes, a migration drops a key. Dashboards keep showing numbers, just wrong ones.</p>
+          </article>
+          <article class="card reveal">
+            <h3>Nobody knows normal</h3>
+            <p>No documentation, no tests, and the person who built it left. You can't alert on "unusual" if you don't know what usual is.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -------------------------------------------------------------------- -->
+    <section class="section section--alt" id="how">
+      <div class="wrap">
+        <p class="eyebrow">How it works</p>
+        <h2 class="reveal">Every night, four steps.</h2>
+        <ol class="steps">
+          <li class="step reveal"><span class="step__n">1</span><h3>Discover</h3><p>Reads the structure and finds the relationships nobody declared, from names, matching values and the app's own queries.</p></li>
+          <li class="step reveal"><span class="step__n">2</span><h3>Learn normal</h3><p>Learns each column's usual empties, ranges and values, and each table's weekday rhythm, from its own history.</p></li>
+          <li class="step reveal"><span class="step__n">3</span><h3>Find</h3><p>Checks eight kinds of problems. One digest, only what's new, with the rows involved.</p></li>
+          <li class="step reveal"><span class="step__n">4</span><h3>Explain</h3><p>What it means, what it breaks downstream, and what to check first. Every number is from the evidence.</p></li>
+        </ol>
+        <p class="motto reveal">AI discovers. People approve. Lumida enforces.</p>
+      </div>
+    </section>
+
+    <!-- Findings inbox ------------------------------------------------------------------ -->
+    <section class="section">
+      <div class="wrap split">
+        <div class="split__copy">
+          <p class="eyebrow">Findings</p>
+          <h2 class="reveal">Evidence, not alarms.</h2>
+          <p>Every finding quotes real numbers and points at the rows. Confirm it, or mark it as normal, and Lumida remembers. It never raises the same false alarm twice.</p>
+        </div>
+        <div class="inbox reveal" aria-label="Example findings">
+          <div class="inbox__head">Findings · shopco <span class="pill pill--muted">4 open</span></div>
+          <ul class="inbox__list" id="inbox">
+            <li class="finding" data-sev="high">
+              <button class="finding__row" aria-expanded="true">
+                <span class="sev sev--high">high</span>
+                <span class="finding__title">32 emails differ from another only by letter case</span>
+                <span class="finding__where">shop.customers</span>
+              </button>
+              <div class="finding__body">
+                <p>The column was unique for 14 nights; now 32 values match another except for case. Usually the same customer registered twice.</p>
+                <dl class="evidence"><div><dt>values</dt><dd>1,925</dd></div><div><dt>distinct</dt><dd>1,925</dd></div><div><dt>ignoring case</dt><dd>1,893</dd></div></dl>
+                <div class="finding__actions"><button class="btn btn--small btn--ghost" data-act="confirm">Confirm</button><button class="btn btn--small btn--ghost" data-act="dismiss">Not a problem</button></div>
+              </div>
+            </li>
+            <li class="finding" data-sev="high">
+              <button class="finding__row" aria-expanded="false">
+                <span class="sev sev--high">high</span>
+                <span class="finding__title">reporting.daily_sales stopped updating</span>
+                <span class="finding__where">reporting</span>
+              </button>
+              <div class="finding__body" hidden>
+                <p>Updated every night for 14 nights; not since 2026-03-15. The nightly load probably didn't run.</p>
+                <div class="finding__actions"><button class="btn btn--small btn--ghost" data-act="confirm">Confirm</button><button class="btn btn--small btn--ghost" data-act="dismiss">Not a problem</button></div>
+              </div>
+            </li>
+            <li class="finding" data-sev="medium">
+              <button class="finding__row" aria-expanded="false">
+                <span class="sev sev--medium">medium</span>
+                <span class="finding__title">NULLs in postal_code jumped from 0.0% to 8.0%</span>
+                <span class="finding__where">shop.addresses</span>
+              </button>
+              <div class="finding__body" hidden>
+                <p>154 of 1,925 rows are now empty; the usual was 0.0% over 14 nights.</p>
+                <div class="finding__actions"><button class="btn btn--small btn--ghost" data-act="confirm">Confirm</button><button class="btn btn--small btn--ghost" data-act="dismiss">Not a problem</button></div>
+              </div>
+            </li>
+            <li class="finding" data-sev="medium">
+              <button class="finding__row" aria-expanded="false">
+                <span class="sev sev--medium">medium</span>
+                <span class="finding__title">8 names in CUST_MASTER look like email addresses</span>
+                <span class="finding__where">legacy.CUST_MASTER</span>
+              </button>
+              <div class="finding__body" hidden>
+                <p>Personal data where the column's name doesn't say so. Counted inside the database; no value was read out.</p>
+                <div class="finding__actions"><button class="btn btn--small btn--ghost" data-act="confirm">Confirm</button><button class="btn btn--small btn--ghost" data-act="dismiss">Not a problem</button></div>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- It asks ------------------------------------------------------------------------- -->
+    <section class="section section--alt">
+      <div class="wrap split split--reverse">
+        <div class="split__copy">
+          <p class="eyebrow">It asks. You answer.</p>
+          <h2 class="reveal">A few questions beat a week of guessing.</h2>
+          <p>Lumida asks only where your answer changes what it checks, with its best guess filled in. Each answer becomes a check from the first night. Already documented in dbt? It reads that too.</p>
+        </div>
+        <div class="ask reveal" id="ask">
+          <p class="ask__meta">Question 2 of 6 · shop.addresses</p>
+          <p class="ask__q"><code>postal_code</code> is never empty today, but the database allows it. Must it always be filled?</p>
+          <div class="ask__answers">
+            <button class="btn btn--amber btn--small" data-answer="yes">Yes</button>
+            <button class="btn btn--ghost btn--small" data-answer="no">No</button>
+            <button class="btn btn--ghost btn--small" data-answer="skip">Don't know</button>
+          </div>
+          <p class="ask__result" aria-live="polite"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Eight kinds --------------------------------------------------------------------- -->
+    <section class="section" id="problems">
+      <div class="wrap">
+        <p class="eyebrow">What it finds</p>
+        <h2 class="reveal">Eight kinds of problems, every night.</h2>
+        <div class="cards cards--4">
+          <article class="tile reveal"><h3>Structure</h3><p>Missing keys, dropped columns, changed types, slow unindexed links.</p></article>
+          <article class="tile reveal"><h3>Relationships</h3><p>Orphan rows and duplicate entities, even where no foreign key was declared.</p></article>
+          <article class="tile reveal"><h3>Values</h3><p>Sudden empties, impossible numbers, "USA" creeping in next to "US".</p></article>
+          <article class="tile reveal"><h3>Business rules</h3><p>"Shipped after ordered", "total = sum of lines". AI proposes, you approve.</p></article>
+          <article class="tile reveal"><h3>Freshness &amp; volume</h3><p>Loads that didn't run or ran halfway, aware of weekdays and closed days.</p></article>
+          <article class="tile reveal"><h3>Unusual rows</h3><p>An order line with quantity 500 where 1–3 is normal, with its row IDs.</p></article>
+          <article class="tile reveal"><h3>Copies that don't match</h3><p>The warehouse copy is missing 7 orders the app database has.</p></article>
+          <article class="tile reveal"><h3>Personal data</h3><p>A map of where it lives, and a flag where it shouldn't be.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security ------------------------------------------------------------------------ -->
+    <section class="section section--alt" id="security">
+      <div class="wrap">
+        <p class="eyebrow">Security &amp; privacy</p>
+        <h2 class="reveal">Read-only. Inside your network. Your data stays put.</h2>
+        <div class="cards cards--4">
+          <article class="card reveal"><h3>Read-only</h3><p>Every query runs in a read-only transaction with statement and lock timeouts. Lumida never writes to your database.</p></article>
+          <article class="card reveal"><h3>Counted in place</h3><p>All the counting happens inside your database. Only counts, statistics and the IDs of offending rows come back.</p></article>
+          <article class="card reveal"><h3>No values out</h3><p>Row values aren't logged or sent anywhere. The optional AI features see structure and statistics, never your rows.</p></article>
+          <article class="card reveal"><h3>Self-hosted</h3><p>Runs as a container inside your network, next to your database. Nothing to open to the internet.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Terminal ------------------------------------------------------------------------ -->
+    <section class="section">
+      <div class="wrap split">
+        <div class="split__copy">
+          <p class="eyebrow">One command</p>
+          <h2 class="reveal">The whole night's work in one run.</h2>
+          <p>Scan, discover, check rules and rows, detect, reconcile copies, score health, alert. Schedule it nightly, or run it when you want.</p>
+        </div>
+        <div class="terminal reveal" aria-label="Example terminal output">
+          <div class="terminal__bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <pre class="terminal__body" id="terminal"><code>$ lumida run shopco
+  scan       ok   15 tables
+  discover   ok   15 relationships (11 undeclared)
+  rules      ok   22 rules checked
+  detect     ok   19 new findings
+  health     74 / 100
+  alert      ok   1 digest sent</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Proof --------------------------------------------------------------------------- -->
+    <section class="section section--alt proof" aria-label="Results on our test lab">
+      <div class="wrap">
+        <p class="eyebrow">Tested on a deliberately messy database</p>
+        <div class="stats">
+          <div class="stat reveal"><span class="stat__n">15 / 15</span><span class="stat__l">hidden relationships found, none invented</span></div>
+          <div class="stat reveal"><span class="stat__n">0</span><span class="stat__l">false alarms across 13 quiet nights</span></div>
+          <div class="stat reveal"><span class="stat__n">8</span><span class="stat__l">kinds of problems checked every night</span></div>
+        </div>
+        <p class="proof__note">Results from our open test lab, a simulated e-commerce and billing database with undeclared links, legacy naming and planted problems.</p>
+      </div>
+    </section>
+
+    <!-- Early access -------------------------------------------------------------------- -->
+    <section class="cta" id="early-access">
+      <div class="wrap cta__inner">
+        <img class="cta__mark" src="assets/mark.svg" alt="" width="56" height="56">
+        <h2>See what your database is hiding.</h2>
+        <p>We're looking for a few teams with a messy Postgres, MySQL or SQL Server behind their app to try Lumida first.</p>
+        <form class="signup" id="signup" novalidate>
+          <label class="visually-hidden" for="email">Work email</label>
+          <input id="email" name="email" type="email" placeholder="you@company.com" autocomplete="email" required>
+          <button class="btn btn--amber" type="submit">Get early access</button>
+        </form>
+        <p class="signup__msg" id="signup-msg" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <a class="brand" href="#top" aria-label="Lumida home">
+        <img src="assets/mark.svg" alt="" width="22" height="22">
+        <span class="wordmark wordmark--small">lum<span class="wordmark__i">ı</span>da</span>
+      </a>
+      <nav class="footer__links" aria-label="Footer">
+        <a href="#how">How it works</a>
+        <a href="#security">Security</a>
+        <a href="https://github.com/Rohan708/Lumida" rel="noopener">GitHub</a>
+      </nav>
+      <p class="footer__copy">© <span id="year">2026</span> Lumida</p>
+    </div>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

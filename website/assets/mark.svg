@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Lumida">
+  <title>Lumida</title>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#FFB547" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FFB547" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- A 3x3 grid of table cells; one cell, off-centre, is lit: the problem Lumida found. -->
+  <g fill="#2A3354">
+    <rect x="6" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="44" y="6" width="14" height="14" rx="3.5"/>
+    <rect x="6" y="25" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="25" width="14" height="14" rx="3.5"/>
+    <rect x="6" y="44" width="14" height="14" rx="3.5"/>
+    <rect x="25" y="44" width="14" height="14" rx="3.5"/>
+    <rect x="44" y="44" width="14" height="14" rx="3.5"/>
+  </g>
+  <circle cx="51" cy="32" r="15" fill="url(#glow)"/>
+  <rect x="44" y="25" width="14" height="14" rx="3.5" fill="#FFB547"/>
+</svg>
