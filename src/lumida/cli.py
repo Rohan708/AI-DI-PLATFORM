@@ -47,10 +47,6 @@ from lumida.ingestion.cli import (
 from lumida.ingestion.connections import ConnectionRefError
 from lumida.ingestion.scan import UnsupportedSourceError
 from lumida.ingestion.sources import SourceExistsError, SourceNotFoundError
-from lumida.lab.cli import add_lab_parser, run_lab_command
-from lumida.lab.runner import UnknownScenarioError
-from lumida.lab.schema import LabSafetyError
-from lumida.lab.state import LabNotBuiltError
 from lumida.pipeline_cli import (
     add_pipeline_parsers,
     run_health_command,
@@ -62,6 +58,7 @@ from lumida.reconcile.run import PairConfigError, PairNotFoundError
 from lumida.rules.cli import add_rule_parsers, run_rule_command, run_rules_command
 from lumida.rules.store import InvalidRuleError
 from lumida.semantic.cli import add_semantic_parser, run_pii_command
+from lumida.service.cli import add_service_parsers, run_migrate_command, run_serve_command
 
 # Mistakes a user can make: reported as one line, not a traceback.
 USER_ERRORS = (
@@ -69,9 +66,6 @@ USER_ERRORS = (
     SourceNotFoundError,
     ConnectionRefError,
     UnsupportedSourceError,
-    LabNotBuiltError,
-    LabSafetyError,
-    UnknownScenarioError,
     InvalidTransitionError,
     InvalidRuleError,
     LLMError,
@@ -83,6 +77,41 @@ USER_ERRORS = (
     ValidationError,
     LookupError,
 )
+
+# The test lab needs the `lab` extra (Faker), which the production image leaves out: load it
+# only when `lumida lab` is used, and say how to install it otherwise.
+LAB_EXTRA_HINT = 'the test lab needs the lab extra: pip install "lumida[lab]"'
+
+
+def _add_lab_parser(subcommands: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    try:
+        from lumida.lab.cli import add_lab_parser
+    except ModuleNotFoundError as exc:
+        if exc.name != "faker":
+            raise
+        p = subcommands.add_parser("lab", help=f"the messy test lab ({LAB_EXTRA_HINT})")
+        p.add_argument("rest", nargs=argparse.REMAINDER)
+        return
+    add_lab_parser(subcommands)
+
+
+def _run_lab(args: argparse.Namespace) -> int:
+    try:
+        from lumida.lab.cli import run_lab_command
+        from lumida.lab.runner import UnknownScenarioError
+        from lumida.lab.schema import LabSafetyError
+        from lumida.lab.state import LabNotBuiltError
+    except ModuleNotFoundError as exc:
+        if exc.name != "faker":
+            raise
+        print(f"error: {LAB_EXTRA_HINT}", file=sys.stderr)
+        return 1
+    try:
+        return run_lab_command(args)
+    except (LabNotBuiltError, LabSafetyError, UnknownScenarioError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
 
 _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "run": run_run_command,
@@ -106,7 +135,9 @@ _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "questions": run_questions_command,
     "answer": run_answer_command,
     "context": run_context_command,
-    "lab": run_lab_command,
+    "serve": run_serve_command,
+    "migrate": run_migrate_command,
+    "lab": _run_lab,
 }
 
 
@@ -122,14 +153,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_reconcile_parser(subcommands)
     add_semantic_parser(subcommands)
     add_context_parsers(subcommands)
-    add_lab_parser(subcommands)
+    add_service_parsers(subcommands)
+    _add_lab_parser(subcommands)
 
     args = parser.parse_args(argv)
     try:
         return _dispatch(args)
     except USER_ERRORS as exc:
-        print(f"error: {exc}", file=sys.stderr)
+        print(f"error: {_one_line(exc)}", file=sys.stderr)
         return 1
+
+
+def _one_line(exc: BaseException) -> str:
+    """Settings problems in plain words (pydantic's own report is several lines)."""
+    if isinstance(exc, ValidationError) and exc.title == "Settings":
+        missing = [str(e["loc"][0]) for e in exc.errors() if e["type"] == "missing"]
+        if missing:
+            names = ", ".join(f"LUMIDA_{name.upper()}" for name in missing)
+            return f"{names} is not set (see .env.example)"
+    return str(exc)
 
 
 def _dispatch(args: argparse.Namespace) -> int:

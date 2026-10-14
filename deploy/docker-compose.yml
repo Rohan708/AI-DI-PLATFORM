@@ -1,0 +1,45 @@
+# Lumida, self-hosted: the service plus its own metadata database.
+#
+#   cd deploy
+#   cp .env.example .env        # then edit it (Windows: copy .env.example .env)
+#   docker compose up -d --build
+#   docker compose exec lumida lumida source add shop --connection-ref SHOP_DB_URL
+#
+# Full guide: docs/setup/install.md
+
+name: lumida
+
+services:
+  metadata:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lumida}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_DB: ${POSTGRES_DB:-lumida}
+    volumes:
+      - lumida-metadata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  lumida:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: lumida:local
+    env_file: .env
+    environment:
+      # The metadata store above; customer database URLs come from .env by name.
+      LUMIDA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lumida}:${POSTGRES_PASSWORD}@metadata:5432/${POSTGRES_DB:-lumida}
+    depends_on:
+      metadata:
+        condition: service_healthy
+    restart: unless-stopped
+    # A run in progress finishes its current source before stopping.
+    stop_grace_period: 5m
+
+volumes:
+  lumida-metadata:

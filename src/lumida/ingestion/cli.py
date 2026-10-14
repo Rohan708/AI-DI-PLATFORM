@@ -11,11 +11,13 @@ from lumida.config import get_settings
 from lumida.db import create_db_engine
 from lumida.graph.models import RunStatus, SourceKind
 from lumida.ingestion.scan import scan_source
+from lumida.ingestion.settings import ScanSettings
 from lumida.ingestion.sources import (
     add_source,
     get_source,
     list_sources,
     remove_source,
+    scan_settings,
 )
 from lumida.ingestion.summary import render_source_summary
 
@@ -34,6 +36,8 @@ def add_ingestion_parsers(
         required=True,
         help="NAME of the environment variable (or .env entry) holding the connection URL",
     )
+    p.add_argument("--run-at", help="nightly run time for `lumida serve` (default 03:00; 'off')")
+    p.add_argument("--timezone", help="time zone of --run-at (default UTC)")
     p.add_argument("--include-schemas", default="", help="comma-separated; default: all")
     p.add_argument("--exclude-schemas", default="", help="comma-separated")
     p.add_argument("--sample-row-threshold", type=int)
@@ -58,6 +62,13 @@ def add_ingestion_parsers(
     target.add_argument("--webhook-ref", help="env var holding a Slack webhook URL")
     target.add_argument("--console", action="store_true", help="print alerts instead")
 
+    p = commands.add_parser("schedule", help="when `lumida serve` runs a source every night")
+    p.add_argument("name")
+    when = p.add_mutually_exclusive_group(required=True)
+    when.add_argument("--run-at", help="local time, e.g. 03:00")
+    when.add_argument("--off", action="store_true", help="don't run it on a schedule")
+    p.add_argument("--timezone", help="e.g. UTC, Europe/Berlin, Asia/Kolkata")
+
     p = commands.add_parser(
         "remove", help="delete everything recorded about a source (not the database itself)"
     )
@@ -81,6 +92,10 @@ def run_source_command(args: argparse.Namespace) -> int:
                 settings["sample_row_threshold"] = args.sample_row_threshold
             if args.no_value_samples:
                 settings["allow_value_samples"] = False
+            if args.run_at:
+                settings["run_at"] = None if args.run_at == "off" else args.run_at
+            if args.timezone:
+                settings["timezone"] = args.timezone
             source = add_source(
                 session,
                 name=args.name,
@@ -93,9 +108,11 @@ def run_source_command(args: argparse.Namespace) -> int:
         elif args.source_command == "list":
             for source in list_sources(session):
                 alerts = source.alert_webhook_ref or "console"
+                s = scan_settings(source)
+                when = f"{s.run_at} {s.timezone}" if s.run_at else "not scheduled"
                 print(
                     f"{source.name:20} {source.kind.value:10} ref={source.connection_ref} "
-                    f"alerts={alerts}"
+                    f"alerts={alerts} runs={when}"
                 )
         elif args.source_command == "show":
             print(render_source_summary(session, get_source(session, args.name)))
@@ -103,6 +120,15 @@ def run_source_command(args: argparse.Namespace) -> int:
             source = get_source(session, args.name)
             source.alert_webhook_ref = None if args.console else args.webhook_ref
             print(f"{source.name}: alerts go to {source.alert_webhook_ref or 'the console'}")
+        elif args.source_command == "schedule":
+            source = get_source(session, args.name)
+            change: dict[str, object] = {"run_at": None if args.off else args.run_at}
+            if args.timezone:
+                change["timezone"] = args.timezone
+            updated = ScanSettings.model_validate({**source.settings, **change})
+            source.settings = updated.model_dump(mode="json", exclude_defaults=True)
+            when = f"{updated.run_at} {updated.timezone}" if updated.run_at else "not scheduled"
+            print(f"{source.name}: runs {when}")
         elif args.source_command == "remove":
             source = get_source(session, args.name)
             if not args.yes:

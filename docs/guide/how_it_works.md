@@ -216,7 +216,8 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 2.7 | The engine asks questions; answers become checks (required, unique, allowed values, deadlines, closed days, importance); dbt import | ✅ lab: day-one detection of 2 planted problems |
 | 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
 | — | Name, logo and landing page (**Lumida**, *light on your data*) | ✅ `website/` (form not connected, domain not chosen) |
-| **4** | **Product: self-hosted Docker package + scheduler, API, accounts, web UI, onboarding** | **next: 4.1 packaging + scheduler** |
+| 4.1 | Self-hosted install: one `docker compose up`, every database runs nightly at its own time, failed runs alerted, health check | ✅ built in CI, verified with compose |
+| **4.2+** | **API, accounts, web UI, onboarding** | **next: 4.2 API** |
 | 5 | Beta with 1–3 real companies; accuracy track record | |
 | 6 | Root cause ("why did this happen?") and suggested fixes | |
 | 7 | Launch: website, pricing, billing | |

@@ -33,3 +33,13 @@ jobs:
       # GitHub sets CI=true, so integration tests FAIL (not skip) if Docker is missing.
       - name: Tests
         run: pytest
+
+  docker-image:
+    # The self-hosted image must always build (Stage 4.1). Not pushed anywhere yet.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t lumida:ci .
+      - name: Smoke test
+        run: docker run --rm lumida:ci version

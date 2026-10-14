@@ -23,6 +23,7 @@ from pydantic_settings import (
 )
 
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR"]
+LogFormat = Literal["text", "json"]
 # "none" = AI features off (everything else still works). More providers plug in here.
 LLMProvider = Literal["none", "gemini"]
 
@@ -63,6 +64,7 @@ class Settings(BaseSettings):
     database_url: SecretStr
 
     log_level: LogLevel = "INFO"
+    log_format: LogFormat = "text"  # "json" for log collectors (lumida serve)
 
     # Connections to customer databases are configured per data source (Stage 1.3),
     # not as global settings.
@@ -78,6 +80,11 @@ class Settings(BaseSettings):
     llm_model: str | None = None  # None = the provider's default (see reasoning/llm.py)
     llm_timeout_seconds: float = 120.0
     gemini_api_key: SecretStr | None = None
+
+    # The self-hosted service (`lumida serve`, Stage 4.1).
+    scheduler_tick_seconds: float = 60.0  # how often it checks what's due
+    health_host: str = "127.0.0.1"  # 0.0.0.0 to reach /healthz from outside the container
+    health_port: int = 8080  # 0 = no health endpoint
 
     @classmethod
     def settings_customise_sources(

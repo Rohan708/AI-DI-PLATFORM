@@ -4,7 +4,9 @@ Every value has a documented default, so an empty ``{}`` is a valid configuratio
 Unknown keys are rejected (a typo should fail loudly, not be silently ignored).
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from lumida.service.schedule import parse_run_at, zone
 
 # Every query we run is cancelled by the database after this long.
 DEFAULT_STATEMENT_TIMEOUT_MS = 30_000
@@ -14,6 +16,9 @@ DEFAULT_LOCK_TIMEOUT_MS = 2_000
 DEFAULT_SAMPLE_ROW_THRESHOLD = 1_000_000
 # Top values are collected only for columns with at most this many distinct values.
 DEFAULT_TOP_VALUES_MAX_DISTINCT = 50
+# The nightly run: after a typical ETL window, before people start work.
+DEFAULT_RUN_AT = "03:00"
+DEFAULT_TIMEZONE = "UTC"
 
 
 class ScanSettings(BaseModel):
@@ -29,6 +34,23 @@ class ScanSettings(BaseModel):
     # Whether actual values may be stored: top values and min/max of text columns.
     # On by default for self-hosted installs (values stay in the customer's network).
     allow_value_samples: bool = True
+    # When `lumida serve` runs the nightly job: a local time in `timezone` (Stage 4.1).
+    # None = not scheduled (run it by hand with `lumida run`).
+    run_at: str | None = DEFAULT_RUN_AT
+    timezone: str = DEFAULT_TIMEZONE
+
+    @field_validator("run_at")
+    @classmethod
+    def _valid_run_at(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return parse_run_at(value).strftime("%H:%M")
+
+    @field_validator("timezone")
+    @classmethod
+    def _valid_timezone(cls, value: str) -> str:
+        zone(value)
+        return value
 
     def includes_schema(self, schema: str) -> bool:
         if schema in self.exclude_schemas:

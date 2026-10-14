@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.0,<2",
     "sqlglot>=25",
     "pyyaml>=6",  # dbt schema.yml import (Stage 2.7)
+    "tzdata",  # time zones for schedules on systems without one (Windows, slim images)
 ]
 
 [project.optional-dependencies]
@@ -48,7 +49,8 @@ version = { attr = "lumida.__version__" }
 where = ["src"]
 
 [tool.setuptools.package-data]
-lumida = ["py.typed"]
+# Migrations ship with the package so `lumida serve` can upgrade the store anywhere.
+lumida = ["py.typed", "migrations/*.py", "migrations/*.mako", "migrations/versions/*.py"]
 
 # ---------------------------------------------------------------------------
 # ruff

@@ -1,0 +1,24 @@
+# Only what the image needs: pyproject.toml, README.md and src/. Everything else stays out,
+# above all secrets.
+.git
+.github
+.claude
+.env
+.env.*
+!.env.example
+*.p8
+*.pem
+*.key
+**/__pycache__
+**/*.egg-info
+.venv
+.mypy_cache
+.ruff_cache
+.pytest_cache
+tests
+validation
+docs
+website
+generated_docs
+deploy
+scripts
