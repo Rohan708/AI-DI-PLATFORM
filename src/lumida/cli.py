@@ -58,7 +58,12 @@ from lumida.reconcile.run import PairConfigError, PairNotFoundError
 from lumida.rules.cli import add_rule_parsers, run_rule_command, run_rules_command
 from lumida.rules.store import InvalidRuleError
 from lumida.semantic.cli import add_semantic_parser, run_pii_command
-from lumida.service.cli import add_service_parsers, run_migrate_command, run_serve_command
+from lumida.service.cli import (
+    add_service_parsers,
+    run_api_command,
+    run_migrate_command,
+    run_serve_command,
+)
 
 # Mistakes a user can make: reported as one line, not a traceback.
 USER_ERRORS = (
@@ -137,6 +142,7 @@ _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "context": run_context_command,
     "serve": run_serve_command,
     "migrate": run_migrate_command,
+    "api": run_api_command,
     "lab": _run_lab,
 }
 

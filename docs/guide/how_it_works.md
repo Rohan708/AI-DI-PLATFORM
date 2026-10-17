@@ -217,7 +217,8 @@ That's how every number in this guide was measured, and it's the benchmark every
 | 3 | **More databases** (MySQL, SQL Server, Oracle, Snowflake through one generic adapter); **source-vs-copy reconciliation**; **database health** for Postgres | ✅ tested on Postgres + MySQL; Snowflake run pending |
 | — | Name, logo and landing page (**Lumida**, *light on your data*) | ✅ `website/` (form not connected, domain not chosen) |
 | 4.1 | Self-hosted install: one `docker compose up`, every database runs nightly at its own time, failed runs alerted, health check | ✅ built in CI, verified with compose |
-| **4.2+** | **API, accounts, web UI, onboarding** | **next: 4.2 API** |
+| 4.2 | API: everything from the terminal (findings, reviews, rules, questions, health) also over HTTP, for the web app and customers' scripts | ✅ tested on the lab + compose |
+| **4.3+** | **Accounts and roles, web UI, onboarding** | **next: 4.3 accounts** |
 | 5 | Beta with 1–3 real companies; accuracy track record | |
 | 6 | Root cause ("why did this happen?") and suggested fixes | |
 | 7 | Launch: website, pricing, billing | |

@@ -1,7 +1,8 @@
 """``lumida serve``: the long-running service in the self-hosted container.
 
-On start: bring the metadata store up to date (migrations), start the health endpoint,
-then tick every ``LUMIDA_SCHEDULER_TICK_SECONDS`` and run whatever is due. Stops cleanly
+On start: bring the metadata store up to date (migrations), start the health endpoint
+and (when ``LUMIDA_API_TOKEN`` is set) the API, then tick every
+``LUMIDA_SCHEDULER_TICK_SECONDS`` and run whatever is due. Stops cleanly
 on Ctrl+C / ``docker stop`` (SIGTERM): the run in progress finishes its current source
 first, so give the container a generous stop timeout.
 """
@@ -12,7 +13,9 @@ import signal
 import sys
 import threading
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import Engine
 
 from lumida.config import Settings
 from lumida.db import create_db_engine
@@ -20,6 +23,9 @@ from lumida.graph.models import utcnow
 from lumida.service.health import start_health_server
 from lumida.service.migrate import upgrade_to_head
 from lumida.service.runner import ServiceState, run_due
+
+if TYPE_CHECKING:
+    import uvicorn
 
 log = logging.getLogger("lumida.service")
 
@@ -72,6 +78,7 @@ def serve(
             "health endpoint on http://%s:%s/healthz", settings.health_host, settings.health_port
         )
     engine = create_db_engine(url)
+    api = _start_api(settings, engine) if not once else None
     log.info("scheduler started (checks every %gs)", tick)
     try:
         while not stop.is_set():
@@ -86,11 +93,29 @@ def serve(
                 break
             stop.wait(tick)
     finally:
+        if api is not None:
+            api.should_exit = True
         engine.dispose()
         if server is not None:
             server.shutdown()
         log.info("scheduler stopped")
     return state
+
+
+def _start_api(settings: Settings, engine: Engine) -> "uvicorn.Server | None":
+    if settings.api_token is None:
+        log.info("API off (set LUMIDA_API_TOKEN to turn it on)")
+        return None
+    from lumida.api.app import api_server, create_app, start_api_thread
+
+    server = api_server(
+        create_app(engine, settings.api_token.get_secret_value()),
+        settings.api_host,
+        settings.api_port,
+    )
+    start_api_thread(server)
+    log.info("API on http://%s:%s/api/docs", settings.api_host, settings.api_port)
+    return server
 
 
 def install_signal_handlers(stop: threading.Event) -> None:

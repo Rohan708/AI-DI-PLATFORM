@@ -55,21 +55,32 @@ docker compose exec lumida lumida source alerts shop --webhook-ref SLACK_DATA_AL
 
 The health endpoint answers **200** while the scheduler is alive, with each database's last and next run. A database that fails doesn't make the service unhealthy; that's alerted instead. To reach `/healthz` from a monitoring tool, set `LUMIDA_HEALTH_HOST=0.0.0.0` and publish port 8080.
 
-## 6. Upgrade
+## 6. The API (optional)
+Lumida has an HTTP API: the same things as the commands above, for scripts and (soon) the web app. It's **off until you set a token** in `deploy/.env`:
+```
+LUMIDA_API_TOKEN=<a long random string>
+```
+To generate one: `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Then run `docker compose up -d` and open **http://127.0.0.1:8000/api/docs** (click *Authorize* and paste the token). Every request sends `Authorization: Bearer <token>`:
+```bash
+curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/v1/sources
+```
+The API is published on this machine only. To reach it from other machines, put your own reverse proxy with TLS in front of it. Endpoints: [`docs/design/api.md`](../design/api.md).
+
+## 7. Upgrade
 ```bash
 git pull                      # or download the new release
 docker compose up -d --build
 ```
 Migrations run automatically on start. A run in progress finishes its current database before the old container stops (the stop timeout is 5 minutes).
 
-## 7. Back up
+## 8. Back up
 Everything Lumida knows (history, findings, your answers and rules) is in the `lumida-metadata` volume:
 ```bash
 docker compose exec metadata pg_dump -U lumida lumida > lumida-backup.sql
 ```
 Your own databases are never written to, so there's nothing to back up on their side.
 
-## 8. Remove
+## 9. Remove
 ```bash
 docker compose down        # keeps the metadata volume
 docker compose down -v     # also deletes everything Lumida learned

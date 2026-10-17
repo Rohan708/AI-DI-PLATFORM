@@ -48,4 +48,4 @@ A company installs Lumida inside its network with one command. After that it run
 - **Publishing the image** to `ghcr.io/rohan708/lumida`, when a design partner needs it.
 - **Cron expressions** (several runs a day, weekdays only); daily times cover v1.
 - **Overlap protection across sources** within one database server (two sources on the same server run one after another anyway).
-- **Web UI and API** (Stage 4.2–4.4).
+- **Web UI** (4.4). The API (4.2) runs in the same container: [`api.md`](api.md).
