@@ -40,8 +40,8 @@ WORKDIR /home/lumida
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
   CMD python -c "import sys, urllib.request; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=4).status == 200 else 1)"
 
-# The API (on only when LUMIDA_API_TOKEN is set). Publish it on the host's localhost, or
-# behind your own reverse proxy with TLS; see docs/setup/install.md.
+# The API (log in with accounts made by `lumida user add`). Publish it on the host's
+# localhost, or behind your own reverse proxy with TLS; see docs/setup/install.md.
 EXPOSE 8000
 
 ENTRYPOINT ["lumida"]

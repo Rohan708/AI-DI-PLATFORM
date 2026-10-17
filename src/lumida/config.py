@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from dotenv import dotenv_values
-from pydantic import SecretStr, field_validator
+from pydantic import SecretStr
 from pydantic.fields import FieldInfo
 from pydantic_settings import (
     BaseSettings,
@@ -86,16 +86,13 @@ class Settings(BaseSettings):
     health_host: str = "127.0.0.1"  # 0.0.0.0 to reach /healthz from outside the container
     health_port: int = 8080  # 0 = no health endpoint
 
-    # The API (Stage 4.2). Off until a token is set; every request must send it.
-    api_token: SecretStr | None = None
+    # The API (Stage 4.2) with personal logins (4.3; create people with `lumida user add`).
+    api_enabled: bool = True  # inside `lumida serve`
     api_host: str = "127.0.0.1"  # the image sets 0.0.0.0; compose publishes it on localhost only
     api_port: int = 8000
-
-    @field_validator("api_token", mode="before")
-    @classmethod
-    def _empty_token_is_off(cls, value: object) -> object:
-        # `LUMIDA_API_TOKEN=` (as in .env.example) means "no API", not "an empty password".
-        return None if isinstance(value, str) and not value.strip() else value
+    session_hours: float = 12.0  # how long a login lasts
+    login_max_failures: int = 5  # wrong passwords in a row before the account is locked
+    login_lockout_minutes: float = 15.0
 
     @classmethod
     def settings_customise_sources(

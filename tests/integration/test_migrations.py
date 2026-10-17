@@ -26,6 +26,9 @@ EXPECTED_TABLES = {
     "reconciliation_pair",
     "context_note",
     "question_answer",
+    "app_user",
+    "auth_token",
+    "audit_event",
 }
 
 

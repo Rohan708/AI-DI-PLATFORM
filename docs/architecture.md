@@ -37,7 +37,8 @@ Customer DBs (Postgres, MySQL, MSSQL, Snowflake, …) — read-only
 | `semantic` | Personal-data map and PII in unexpected places, counted in-database — see [design](design/semantic_pii.md) | 2.6 | No |
 | `reconcile` | Source-vs-copy comparison from both sides' scans — see [design](design/stage3_databases.md) | 3 | No |
 | `pipeline` | `lumida run`: scan → discover → rules → rows → semantic → dbhealth → detect → reconcile → health → alert | 1.6 | No |
-| `api` | HTTP API under `/api/v1` (FastAPI): findings, rules, relationships, questions, health. Same functions as the CLI; token login until 4.3. See [design](design/api.md) | 4.2 | No |
+| `api` | HTTP API under `/api/v1` (FastAPI): findings, rules, relationships, questions, health. Same functions as the CLI; personal logins and roles (4.3). See [design](design/api.md) | 4.2 | No |
+| `accounts` | People, roles, logins (scrypt), API keys, audit log, `lumida user` — see [design](design/accounts.md) | 4.3 | No |
 | `service` | `lumida serve`: daily schedule per source, lock, failure alerts, `/healthz`, migrations on start; packaged by `Dockerfile` + `deploy/` — see [design](design/self_hosted.md) | 4.1 | No |
 | `rules` | Safe rule format, storage + human review, nightly checks compiled to read-only SQL — see [design](design/ai_rules.md) | 2 | No |
 | `reasoning` | LLM providers (Gemini first, switchable); privacy-safe context; rule proposals, second opinions on unsure relationships, guarded finding explanations ([design](design/ai_assist.md)); later root cause | 2, 6 | **Yes** (confidence + evidence; human-reviewed) |

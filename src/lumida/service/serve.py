@@ -1,7 +1,7 @@
 """``lumida serve``: the long-running service in the self-hosted container.
 
 On start: bring the metadata store up to date (migrations), start the health endpoint
-and (when ``LUMIDA_API_TOKEN`` is set) the API, then tick every
+and the API (unless ``LUMIDA_API_ENABLED=false``), then tick every
 ``LUMIDA_SCHEDULER_TICK_SECONDS`` and run whatever is due. Stops cleanly
 on Ctrl+C / ``docker stop`` (SIGTERM): the run in progress finishes its current source
 first, so give the container a generous stop timeout.
@@ -26,6 +26,8 @@ from lumida.service.runner import ServiceState, run_due
 
 if TYPE_CHECKING:
     import uvicorn
+
+    from lumida.accounts.store import AuthPolicy
 
 log = logging.getLogger("lumida.service")
 
@@ -103,19 +105,26 @@ def serve(
 
 
 def _start_api(settings: Settings, engine: Engine) -> "uvicorn.Server | None":
-    if settings.api_token is None:
-        log.info("API off (set LUMIDA_API_TOKEN to turn it on)")
+    if not settings.api_enabled:
+        log.info("API off (LUMIDA_API_ENABLED=false)")
         return None
     from lumida.api.app import api_server, create_app, start_api_thread
 
-    server = api_server(
-        create_app(engine, settings.api_token.get_secret_value()),
-        settings.api_host,
-        settings.api_port,
-    )
+    app = create_app(engine, auth_policy(settings))
+    server = api_server(app, settings.api_host, settings.api_port)
     start_api_thread(server)
     log.info("API on http://%s:%s/api/docs", settings.api_host, settings.api_port)
     return server
+
+
+def auth_policy(settings: Settings) -> "AuthPolicy":
+    from lumida.accounts.store import AuthPolicy
+
+    return AuthPolicy(
+        session_hours=settings.session_hours,
+        max_failures=settings.login_max_failures,
+        lockout_minutes=settings.login_lockout_minutes,
+    )
 
 
 def install_signal_handlers(stop: threading.Event) -> None:

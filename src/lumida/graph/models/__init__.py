@@ -1,6 +1,7 @@
 """SQLAlchemy models for the metadata store. Importing this package registers every
 table on ``Base.metadata`` (Alembic relies on that)."""
 
+from lumida.graph.models.accounts import AuditEvent, AuthToken, User
 from lumida.graph.models.assets import (
     Asset,
     AssetColumn,
@@ -18,10 +19,12 @@ from lumida.graph.models.enums import (
     Origin,
     RelationshipKind,
     RelationshipStatus,
+    Role,
     RuleStatus,
     RunStatus,
     Severity,
     SourceKind,
+    TokenKind,
     TypeFamily,
 )
 from lumida.graph.models.findings import Finding, finding_fingerprint
@@ -45,6 +48,8 @@ __all__ = [
     "AssetKind",
     "AssetProfile",
     "AssetVersion",
+    "AuditEvent",
+    "AuthToken",
     "Base",
     "ColumnProfile",
     "ContextNote",
@@ -64,6 +69,7 @@ __all__ = [
     "RelationshipColumn",
     "RelationshipKind",
     "RelationshipStatus",
+    "Role",
     "Rule",
     "RuleStatus",
     "RunStatus",
@@ -71,7 +77,9 @@ __all__ = [
     "SourceKind",
     "StrEnumType",
     "Tenant",
+    "TokenKind",
     "TypeFamily",
+    "User",
     "finding_fingerprint",
     "relationship_signature",
     "utcnow",

@@ -132,39 +132,107 @@ class QuestionOut(BaseModel):
 
 
 # --- requests ------------------------------------------------------------------------------
+# Who is acting comes from the login, never from the request.
 
-# Until accounts arrive (Stage 4.3), the caller says who is acting; it goes into the audit
-# trail exactly like ``--by`` on the command line.
-Actor = Field(min_length=1, max_length=200, description="who is acting (audit trail)")
+Note = Field(default=None, max_length=2000, description="why (kept in the history)")
 
 
 class FindingReview(BaseModel):
     action: Literal["confirm", "reject", "resolve", "reopen"]
-    by: str = Actor
-    note: str | None = Field(default=None, max_length=2000)
+    note: str | None = Note
 
 
 class RuleReview(BaseModel):
     action: Literal["approve", "reject", "disable", "enable", "reconsider"]
-    by: str = Actor
-    note: str | None = Field(default=None, max_length=2000)
+    note: str | None = Note
 
 
 class NewRule(BaseModel):
     spec: dict[str, Any] = Field(description='e.g. {"kind": "not_null", "table": ..., ...}')
-    by: str = Actor
 
 
 class RelationshipReview(BaseModel):
     action: Literal["confirm", "reject"]
-    by: str = Actor
 
 
 class Answer(BaseModel):
     key: str = Field(min_length=1, description="the question's key, from GET .../questions")
-    value: str = Field(max_length=5000, description='the answer; "" or "?" = don\'t know')
-    by: str = Actor
+    value: str = Field(max_length=5000, description='the answer; "" or "?" = not known')
 
 
 class AnswerOut(BaseModel):
     outcome: str
+
+
+# --- accounts (Stage 4.3) ------------------------------------------------------------------
+
+Password = Field(min_length=1, max_length=1024)
+RoleName = Literal["viewer", "reviewer", "admin"]
+
+
+class Login(BaseModel):
+    email: str = Field(min_length=1, max_length=320)
+    password: str = Password
+
+
+class UserOut(BaseModel):
+    id: uuid.UUID
+    email: str
+    name: str
+    role: str
+    created_at: datetime
+    created_by: str
+    last_login_at: datetime | None
+    disabled: bool
+    locked: bool
+
+
+class LoginOut(BaseModel):
+    token: str = Field(description='send as "Authorization: Bearer <token>"')
+    expires_at: datetime
+    user: UserOut
+
+
+class PasswordChange(BaseModel):
+    current_password: str = Password
+    new_password: str = Password
+
+
+class NewUser(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    name: str = Field(default="", max_length=200)
+    role: RoleName = "viewer"
+    password: str = Password
+
+
+class UserChange(BaseModel):
+    role: RoleName | None = None
+    disabled: bool | None = None
+
+
+class PasswordReset(BaseModel):
+    password: str = Password
+
+
+class NewApiKey(BaseModel):
+    label: str = Field(min_length=1, max_length=200, description='e.g. "jira sync"')
+
+
+class ApiKeyOut(BaseModel):
+    id: uuid.UUID
+    label: str | None
+    created_at: datetime
+    last_used_at: datetime | None
+
+
+class NewApiKeyOut(ApiKeyOut):
+    key: str = Field(description="shown once; store it now")
+
+
+class AuditOut(BaseModel):
+    at: datetime
+    actor: str
+    action: str
+    target_type: str | None
+    target_id: str | None
+    details: dict[str, Any]

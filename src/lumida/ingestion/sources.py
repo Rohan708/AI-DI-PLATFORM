@@ -1,5 +1,6 @@
 """Registering the databases we watch. A self-hosted install uses one default tenant."""
 
+import uuid
 from typing import Any
 
 from sqlalchemy import CursorResult, delete, or_, select
@@ -74,19 +75,28 @@ def add_source(
     return source
 
 
-def get_source(session: Session, name: str) -> DataSource:
-    source = session.scalar(
-        select(DataSource)
-        .join(Tenant, Tenant.id == DataSource.tenant_id)
-        .where(Tenant.name == DEFAULT_TENANT_NAME, DataSource.name == name)
-    )
+def get_source(session: Session, name: str, tenant_id: uuid.UUID | None = None) -> DataSource:
+    """A source by name, in ``tenant_id`` (the API: the caller's tenant) or else the
+    self-hosted install's default tenant (the CLI)."""
+    query = select(DataSource).where(DataSource.name == name)
+    if tenant_id is None:
+        query = query.join(Tenant, Tenant.id == DataSource.tenant_id).where(
+            Tenant.name == DEFAULT_TENANT_NAME
+        )
+    else:
+        query = query.where(DataSource.tenant_id == tenant_id)
+    source = session.scalar(query)
     if source is None:
         raise SourceNotFoundError(f"no data source named {name!r}; add it with `lumida source add`")
     return source
 
 
-def list_sources(session: Session) -> list[DataSource]:
-    return list(session.scalars(select(DataSource).order_by(DataSource.name)))
+def list_sources(session: Session, tenant_id: uuid.UUID | None = None) -> list[DataSource]:
+    """Every source (the scheduler), or one tenant's (the API)."""
+    query = select(DataSource).order_by(DataSource.name)
+    if tenant_id is not None:
+        query = query.where(DataSource.tenant_id == tenant_id)
+    return list(session.scalars(query))
 
 
 def scan_settings(source: DataSource) -> ScanSettings:

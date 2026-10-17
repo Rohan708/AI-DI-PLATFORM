@@ -111,3 +111,16 @@ class HealthScope(StrEnum):
 
 # Statuses in which a finding counts as "active" (used for dedup).
 ACTIVE_FINDING_STATUSES = (FindingStatus.OPEN, FindingStatus.CONFIRMED)
+
+
+class Role(StrEnum):
+    """What a person may do (Stage 4.3). Each role includes everything the one before can."""
+
+    VIEWER = "viewer"  # read everything
+    REVIEWER = "reviewer"  # + review findings, rules and relationships, add rules, answer
+    ADMIN = "admin"  # + manage people, read the audit log
+
+
+class TokenKind(StrEnum):
+    SESSION = "session"  # from logging in; expires
+    API_KEY = "api_key"  # for scripts; until revoked

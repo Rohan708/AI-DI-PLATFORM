@@ -35,7 +35,7 @@ services:
       # The metadata store above; customer database URLs come from .env by name.
       LUMIDA_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-lumida}:${POSTGRES_PASSWORD}@metadata:5432/${POSTGRES_DB:-lumida}
     # The API, on this machine only (put a TLS reverse proxy in front to reach it from
-    # elsewhere). It answers only when LUMIDA_API_TOKEN is set in .env.
+    # elsewhere). People log in with accounts made by `lumida user add`.
     ports:
       - "127.0.0.1:${LUMIDA_API_PUBLISH_PORT:-8000}:8000"
     depends_on:

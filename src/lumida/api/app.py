@@ -1,27 +1,26 @@
-"""The Lumida API (Stage 4.2): what the web app (4.4) and a customer's own scripts use.
+"""The Lumida API: what the web app (4.4) and a customer's own scripts use.
 
-- **Off by default.** It starts only when ``LUMIDA_API_TOKEN`` is set; every request must
-  send it as ``Authorization: Bearer <token>``. Accounts and roles replace the shared
-  token in Stage 4.3.
+- **Personal logins** (Stage 4.3): ``POST /api/v1/auth/login`` with email + password
+  returns a token; every other request sends it as ``Authorization: Bearer <token>``.
+  Scripts use personal API keys (``/api/v1/auth/keys``). Roles: viewer, reviewer, admin.
 - Runs inside ``lumida serve`` (one container), or alone with ``lumida api``.
 - Interactive docs at ``/api/docs``, the machine-readable description at ``/api/openapi.json``.
 """
 
 import logging
-import secrets
 import threading
 from collections.abc import Callable
-from typing import Annotated
 
 import uvicorn
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from sqlalchemy import Engine
 
 from lumida import __version__
-from lumida.api.routes import router
+from lumida.accounts.passwords import WeakPasswordError
+from lumida.accounts.store import AccountError, AccountNotFoundError, AuthPolicy
+from lumida.api import account_routes, routes
 from lumida.api.views import NotFoundError
 from lumida.context.questions import AnswerError
 from lumida.context.store import ContextError
@@ -32,23 +31,13 @@ from lumida.rules.store import InvalidRuleError
 log = logging.getLogger("lumida.api")
 
 # A request that can't be done as asked (the CLI prints these as one line): the API returns
-# {"detail": "..."} with 404 or 409. Anything else is a bug and stays a 500.
-NOT_FOUND = (SourceNotFoundError, NotFoundError)
-CONFLICT = (InvalidTransitionError, InvalidRuleError, AnswerError, ContextError)
+# {"detail": "..."} with 404, 409 or 422. Anything else is a bug and stays a 500.
+NOT_FOUND = (SourceNotFoundError, NotFoundError, AccountNotFoundError)
+CONFLICT = (InvalidTransitionError, InvalidRuleError, AnswerError, ContextError, AccountError)
+INVALID = (WeakPasswordError,)
 
-Credentials = Annotated[HTTPAuthorizationCredentials | None, Depends(HTTPBearer(auto_error=False))]
 
-
-def create_app(engine: Engine, token: str) -> FastAPI:
-    if not token:
-        raise ValueError("the API needs a token (LUMIDA_API_TOKEN)")
-
-    def require_token(credentials: Credentials) -> None:
-        sent = credentials.credentials if credentials else ""
-        if not secrets.compare_digest(sent.encode(), token.encode()):
-            raise HTTPException(401, "missing or wrong API token",
-                                headers={"WWW-Authenticate": "Bearer"})  # fmt: skip
-
+def create_app(engine: Engine, policy: AuthPolicy | None = None) -> FastAPI:
     app = FastAPI(
         title="Lumida API",
         version=__version__,
@@ -57,9 +46,11 @@ def create_app(engine: Engine, token: str) -> FastAPI:
         openapi_url="/api/openapi.json",
     )
     app.state.engine = engine
-    app.include_router(router, dependencies=[Depends(require_token)])
+    app.state.policy = policy or AuthPolicy()
+    app.include_router(account_routes.router)
+    app.include_router(routes.router)
 
-    for errors, code in ((NOT_FOUND, 404), (CONFLICT, 409)):
+    for errors, code in ((NOT_FOUND, 404), (CONFLICT, 409), (INVALID, 422)):
         for error in errors:
             app.add_exception_handler(error, _reply(code))
 

@@ -30,26 +30,20 @@ from lumida.graph.models import (
     IngestionRun,
     Relationship,
     Rule,
-    Tenant,
 )
-from lumida.ingestion.sources import DEFAULT_TENANT_NAME, scan_settings
+from lumida.ingestion.sources import scan_settings
 
 
 class NotFoundError(LookupError):
     pass
 
 
-def tenant_id(session: Session) -> uuid.UUID:
-    """The self-hosted install's one tenant (accounts and tenants arrive in Stage 4.3)."""
-    found = session.scalar(select(Tenant.id).where(Tenant.name == DEFAULT_TENANT_NAME))
-    if found is None:
-        raise NotFoundError("no data sources yet; add one with `lumida source add`")
-    return found
-
-
-def owned[T: (Finding, Rule, Relationship)](session: Session, model: type[T], id_: uuid.UUID) -> T:
+def owned[T: (Finding, Rule, Relationship)](
+    session: Session, model: type[T], id_: uuid.UUID, tenant_id: uuid.UUID
+) -> T:
+    """A row by id, if it belongs to the caller's tenant (otherwise it doesn't exist for them)."""
     row = session.get(model, id_)
-    if row is None or row.tenant_id != tenant_id(session):
+    if row is None or row.tenant_id != tenant_id:
         raise NotFoundError(f"no {model.__tablename__.replace('_', ' ')} with id {id_}")
     return row
 

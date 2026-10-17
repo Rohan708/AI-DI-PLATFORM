@@ -55,16 +55,24 @@ docker compose exec lumida lumida source alerts shop --webhook-ref SLACK_DATA_AL
 
 The health endpoint answers **200** while the scheduler is alive, with each database's last and next run. A database that fails doesn't make the service unhealthy; that's alerted instead. To reach `/healthz` from a monitoring tool, set `LUMIDA_HEALTH_HOST=0.0.0.0` and publish port 8080.
 
-## 6. The API (optional)
-Lumida has an HTTP API: the same things as the commands above, for scripts and (soon) the web app. It's **off until you set a token** in `deploy/.env`:
-```
-LUMIDA_API_TOKEN=<a long random string>
-```
-To generate one: `python -c "import secrets; print(secrets.token_urlsafe(32))"`. Then run `docker compose up -d` and open **http://127.0.0.1:8000/api/docs** (click *Authorize* and paste the token). Every request sends `Authorization: Bearer <token>`:
+## 6. People, logins and the API
+Lumida has an HTTP API (the web app will use it, and so can your scripts). People log in as themselves. Create the **first admin** in the container; the password goes in at a hidden prompt:
 ```bash
-curl -H "Authorization: Bearer <token>" http://127.0.0.1:8000/api/v1/sources
+docker compose exec -it lumida lumida user add you@company.com --role admin
 ```
-The API is published on this machine only. To reach it from other machines, put your own reverse proxy with TLS in front of it. Endpoints: [`docs/design/api.md`](../design/api.md).
+Then open **http://127.0.0.1:8000/api/docs**, log in with `POST /auth/login`, click *Authorize* and paste the token. Admins add colleagues with `POST /users` (or `lumida user add`):
+
+| Role | May |
+|---|---|
+| viewer | read everything |
+| reviewer | + confirm or reject findings, approve rules, answer questions |
+| admin | + manage people, read the audit log |
+
+For scripts, make a personal API key (`POST /auth/keys`) and send it as `Authorization: Bearer <key>`:
+```bash
+curl -H "Authorization: Bearer <key>" http://127.0.0.1:8000/api/v1/sources
+```
+Logins last 12 hours. After 5 wrong passwords an account is locked for 15 minutes; an admin's password reset (`lumida user password EMAIL`) unlocks it. The API is published on this machine only; to reach it from other machines, put your own reverse proxy with TLS in front of it. Details: [`api.md`](../design/api.md), [`accounts.md`](../design/accounts.md).
 
 ## 7. Upgrade
 ```bash

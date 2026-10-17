@@ -14,6 +14,9 @@ from collections.abc import Callable, Sequence
 from pydantic import ValidationError
 
 from lumida import __version__
+from lumida.accounts.cli import add_user_parsers, run_user_command
+from lumida.accounts.passwords import WeakPasswordError
+from lumida.accounts.store import AccountError
 from lumida.context.cli import (
     add_context_parsers,
     run_answer_command,
@@ -67,6 +70,8 @@ from lumida.service.cli import (
 
 # Mistakes a user can make: reported as one line, not a traceback.
 USER_ERRORS = (
+    AccountError,
+    WeakPasswordError,
     SourceExistsError,
     SourceNotFoundError,
     ConnectionRefError,
@@ -143,6 +148,7 @@ _COMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "serve": run_serve_command,
     "migrate": run_migrate_command,
     "api": run_api_command,
+    "user": run_user_command,
     "lab": _run_lab,
 }
 
@@ -160,6 +166,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     add_semantic_parser(subcommands)
     add_context_parsers(subcommands)
     add_service_parsers(subcommands)
+    add_user_parsers(subcommands)
     _add_lab_parser(subcommands)
 
     args = parser.parse_args(argv)
